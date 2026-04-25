@@ -50,7 +50,12 @@ public class TerritoryService {
         territory.setState(request.state());
         territory.setZone(request.zone());
 
-        return territoryMapper.toDto(territory);
+        if (request.isActive() != null) {
+            territory.setActive(request.isActive());
+        }
+
+        Territory saved = territoryRepository.save(territory);
+        return territoryMapper.toDto(saved);
     }
 
     @Transactional
