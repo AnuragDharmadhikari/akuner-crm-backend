@@ -1,4 +1,16 @@
 package org.ved.crm.order;
 
-public record OrderItemDto() {
+import java.math.BigDecimal;
+import java.util.UUID;
+
+public record OrderItemDto(
+        UUID id,
+        UUID productId,
+        String productName,
+        String hsnCode,
+        Integer quantity,
+        BigDecimal unitPrice,
+        BigDecimal discountPct,
+        BigDecimal lineTotal
+) {
 }

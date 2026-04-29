@@ -1,4 +1,9 @@
 package org.ved.crm.order;
 
-public class OrderStatus {
+public enum OrderStatus {
+
+    PENDING,
+    CONFIRMED,
+    DISPATCHED
+
 }
