@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.exception.ResourceNotFoundException;
+import org.ved.crm.inventory.InventoryService;
 import org.ved.crm.order.Order;
 import org.ved.crm.order.OrderItem;
 import org.ved.crm.order.OrderRepository;
@@ -28,6 +29,7 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final OrderRepository orderRepository;
     private final InvoiceMapper invoiceMapper;
+    private final InventoryService inventoryService;
 
     @Value("${vedpharm.company.state}")
     private String companyState;
@@ -196,6 +198,13 @@ public class InvoiceService {
 
         // Step 10 — Save and re-fetch for complete response
         Invoice saved = invoiceRepository.save(invoice);
+
+        // Step 11 — Deduct stock for all line items in this invoice
+        // FIFO by expiry — oldest expiring batch deducted first
+        // If insufficient stock, this throws IllegalArgumentException
+        // and the entire transaction rolls back — invoice is NOT saved
+        inventoryService.deductStockForInvoice(saved);
+
         return invoiceMapper.toDto(
                 invoiceRepository.findByIdWithDetails(saved.getId()).orElseThrow()
         );
