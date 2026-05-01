@@ -5,13 +5,24 @@ import org.springframework.stereotype.Component;
 @Component
 public class InvoiceMapper {
 
-    public InvoiceDto toDto(Invoice invoice){
-
+    public InvoiceDto toDto(Invoice invoice) {
         return new InvoiceDto(
                 invoice.getId(),
                 invoice.getOrder().getId(),
                 invoice.getRep().getId(),
                 invoice.getRep().getFullName(),
+
+                // Chemist — always present
+                invoice.getChemist().getId(),
+                invoice.getChemist().getFirmName(),
+                invoice.getChemist().getState(),
+
+                // Stockist — null safe for DIRECT orders
+                invoice.getStockist() != null ? invoice.getStockist().getId() : null,
+                invoice.getStockist() != null ? invoice.getStockist().getFirmName() : null,
+                invoice.getStockist() != null ? invoice.getStockist().getState() : null,
+
+                invoice.getBilledTo(),
                 invoice.getInvoiceNumber(),
                 invoice.getInvoiceDate(),
                 invoice.getTaxType(),
@@ -28,8 +39,8 @@ public class InvoiceMapper {
                 invoice.getCreatedAt(),
                 invoice.getUpdatedAt()
         );
+    }
 
-    }// Maps a single InvoiceLineItem to InvoiceLineItemDto
     private InvoiceLineItemDto toLineItemDto(InvoiceLineItem item) {
         return new InvoiceLineItemDto(
                 item.getId(),

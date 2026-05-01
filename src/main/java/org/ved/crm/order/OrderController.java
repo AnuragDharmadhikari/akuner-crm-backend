@@ -48,6 +48,14 @@ public class OrderController {
                         orderService.getOrdersByRep(repId)));
     }
 
+    @GetMapping("/chemist/{chemistId}")
+    public ResponseEntity<ApiResponse<List<OrderDto>>> getOrdersByChemist(
+            @PathVariable UUID chemistId) {
+        return ResponseEntity.ok(
+                ApiResponse.success("Orders retrieved successfully",
+                        orderService.getOrdersByChemist(chemistId)));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<OrderDto>> createOrder(
             @Valid @RequestBody CreateOrderRequest request) {

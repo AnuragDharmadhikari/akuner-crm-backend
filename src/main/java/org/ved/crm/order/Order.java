@@ -2,6 +2,7 @@ package org.ved.crm.order;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.audit.BaseAuditEntity;
 import org.ved.crm.stockist.Stockist;
 import org.ved.crm.user.User;
@@ -25,17 +26,26 @@ public class Order extends BaseAuditEntity {
     private User rep;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stockist_id",nullable = false)
+    @JoinColumn(name = "chemist_id",nullable = false)
+    private Chemist chemist;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stockist_id")
     private Stockist stockist;
 
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfillment_type",nullable = false)
+    private FulfillmentType fulfillmentType;
+
+    @Column(name = "order_date",nullable = false)
     private LocalDate orderDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OrderStatus status;
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private OrderStatus status = OrderStatus.PENDING;
 
-    @Column(nullable = false,precision = 10,scale = 2)
+    @Column(name = "total_amount",nullable = false,precision = 10,scale = 2)
     private BigDecimal totalAmount;
 
     @Builder.Default

@@ -2,8 +2,10 @@ package org.ved.crm.billing;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.audit.BaseAuditEntity;
 import org.ved.crm.order.Order;
+import org.ved.crm.stockist.Stockist;
 import org.ved.crm.user.User;
 
 import java.math.BigDecimal;
@@ -27,6 +29,21 @@ public class Invoice extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rep_id",nullable = false)
     private User rep;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chemist_id", nullable = false)
+    private Chemist chemist;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stockist_id")
+    private Stockist stockist;
+
+    // Who is being billed — drives tax state comparison
+    // STOCKIST → tax based on stockist.state
+    // CHEMIST → tax based on chemist.state
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billed_to", nullable = false)
+    private BilledTo billedTo;
 
     @Column(name = "invoice_number",nullable = false,unique = true)
     private String invoiceNumber;

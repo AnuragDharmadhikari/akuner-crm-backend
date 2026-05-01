@@ -11,10 +11,24 @@ public record InvoiceDto(
         UUID orderId,
         UUID repId,
         String repName,
+
+        // Chemist — always present
+        UUID chemistId,
+        String chemistFirmName,
+        String chemistState,
+
+        // Stockist — nullable for DIRECT orders
+        UUID stockistId,
+        String stockistFirmName,
+        String stockistState,
+
+        // Who is billed — STOCKIST or CHEMIST
+        BilledTo billedTo,
+
         String invoiceNumber,
         LocalDate invoiceDate,
         TaxType taxType,
-        BigDecimal subTotal,
+        BigDecimal subtotal,
         BigDecimal totalDiscount,
         BigDecimal totalCgst,
         BigDecimal totalSgst,
@@ -22,7 +36,7 @@ public record InvoiceDto(
         BigDecimal grandTotal,
         InvoiceStatus status,
         List<InvoiceLineItemDto> lineItems,
-        Instant createAt,
+        Instant createdAt,
         Instant updatedAt
 ) {
 }

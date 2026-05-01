@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.order.Order;
 import org.ved.crm.order.OrderItem;
 import org.ved.crm.order.OrderRepository;
 import org.ved.crm.order.OrderStatus;
+import org.ved.crm.order.FulfillmentType;
+import org.ved.crm.stockist.Stockist;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,48 +32,68 @@ public class InvoiceService {
     @Value("${vedpharm.company.state}")
     private String companyState;
 
-    public List<InvoiceDto> getAllInvoices(){
+    public List<InvoiceDto> getAllInvoices() {
         return invoiceRepository.findAllWithDetails()
                 .stream()
                 .map(invoiceMapper::toDto)
                 .toList();
     }
 
-    public InvoiceDto getInvoiceById(UUID id){
-       return invoiceRepository.findByIdWithDetails(id)
-                .map(invoiceMapper::toDto)
-                .orElseThrow(()->new ResourceNotFoundException("Invoice","id",id));
+    public InvoiceDto getInvoiceById(UUID id) {
+        Invoice invoice = invoiceRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Invoice", "id", id));
+        return invoiceMapper.toDto(invoice);
     }
 
     @Transactional
-    public InvoiceDto generateInvoice(UUID orderId){
+    public InvoiceDto generateInvoice(UUID orderId) {
 
-        // Step 1 — Load order with all items and relationships
+        // Step 1 — Load order with all relationships
         Order order = orderRepository.findByIdWithDetails(orderId)
-                .orElseThrow(()->new ResourceNotFoundException("Order","id",orderId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order", "id", orderId));
 
         // Step 2 — Only CONFIRMED orders can be invoiced
-        if(order.getStatus()!= OrderStatus.CONFIRMED){
-            throw new IllegalArgumentException("Only CONFIRMED orders can be invoiced");
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalArgumentException(
+                    "Only CONFIRMED orders can be invoiced");
         }
 
-        // Step 3 — One order can only ever produce one invoice
-        if(invoiceRepository.existsByOrderId(orderId)){
-            throw new IllegalArgumentException("Invoice already exists for this order");
+        // Step 3 — One order can only produce one invoice
+        if (invoiceRepository.existsByOrderId(orderId)) {
+            throw new IllegalArgumentException(
+                    "Invoice already exists for this order");
         }
 
-        // Step 4 — Compare states to determine tax type
-        // Same state → CGST+SGST, Different state → IGST
+        // Step 4 — Determine who is billed and which state to use for tax
+        // VIA_STOCKIST → invoice goes to Stockist → tax based on stockist state
+        // DIRECT → invoice goes to Chemist → tax based on chemist state
+        Chemist chemist = order.getChemist();
+        Stockist stockist = order.getStockist();
 
-        String stockistState = order.getStockist().getState();
-        TaxType taxType = companyState.equalsIgnoreCase(stockistState)
-                ?TaxType.CGST_SGST
-                :TaxType.IGST;
+        BilledTo billedTo;
+        String billingState;
 
-        // Step 5 — Get next sequential invoice number from PostgreSQL SEQUENCE
+        if (order.getFulfillmentType() == FulfillmentType.VIA_STOCKIST) {
+            billedTo = BilledTo.STOCKIST;
+            // Stockist is guaranteed non-null for VIA_STOCKIST orders
+            billingState = stockist.getState();
+        } else {
+            billedTo = BilledTo.CHEMIST;
+            // Direct sale — bill to chemist, use chemist state for tax
+            billingState = chemist.getState();
+        }
+
+        // Step 5 — Determine CGST+SGST or IGST
+        TaxType taxType = companyState.equalsIgnoreCase(billingState)
+                ? TaxType.CGST_SGST
+                : TaxType.IGST;
+
+        // Step 6 — Generate sequential invoice number
         String invoiceNumber = generateInvoiceNumber();
 
-        // Step 6 — Process each order item, calculate taxes, build line items
+        // Step 7 — Process each order item and calculate taxes
         List<InvoiceLineItem> lineItems = new ArrayList<>();
         BigDecimal totalSubtotal = BigDecimal.ZERO;
         BigDecimal totalDiscount = BigDecimal.ZERO;
@@ -79,43 +102,39 @@ public class InvoiceService {
         BigDecimal totalIgst = BigDecimal.ZERO;
         BigDecimal grandTotal = BigDecimal.ZERO;
 
-        for (OrderItem orderItem : order.getOrderItems()){
+        for (OrderItem orderItem : order.getOrderItems()) {
 
             // Gross = unitPrice × quantity
             BigDecimal grossAmount = orderItem.getUnitPrice()
                     .multiply(BigDecimal.valueOf(orderItem.getQuantity()))
                     .setScale(2, RoundingMode.HALF_UP);
 
-            // Discount in rupees = gross × discountPct / 100
+            // Discount in rupees
             BigDecimal discountAmount = grossAmount
                     .multiply(orderItem.getDiscountPct())
-                    .divide(BigDecimal.valueOf(100),2,RoundingMode.HALF_UP);
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-            // Taxable amount = gross - discount — GST is calculated on this
+            // Taxable amount — GST calculated on this
             BigDecimal taxableAmount = grossAmount
                     .subtract(discountAmount)
-                    .setScale(2,RoundingMode.HALF_UP);
+                    .setScale(2, RoundingMode.HALF_UP);
 
-            // Get numeric GST rate from the enum e.g. GST_12 → 12
+            // Numeric GST rate from enum e.g. GST_12 → 12
             BigDecimal gstRate = BigDecimal.valueOf(
-                    orderItem.getProduct().getGstRate().getRate()
-            );
+                    orderItem.getProduct().getGstRate().getRate());
 
             BigDecimal cgstAmt = BigDecimal.ZERO;
             BigDecimal sgstAmt = BigDecimal.ZERO;
             BigDecimal igstAmt = BigDecimal.ZERO;
 
-            if (taxType == TaxType.CGST_SGST){
-                // Intra-state: divide GST rate by 2 for each component
-                // GST 12% → CGST 6% + SGST 6%
-                // We divide by 200 instead of dividing rate by 2 then by 100
+            if (taxType == TaxType.CGST_SGST) {
+                // Intra-state: GST split equally — divide by 200
                 cgstAmt = taxableAmount
                         .multiply(gstRate)
-                        .divide(BigDecimal.valueOf(200),2,RoundingMode.HALF_UP);
-                sgstAmt=cgstAmt;
-            }else{
-                // Inter-state: full rate as IGST
-                // GST 12% → IGST 12%
+                        .divide(BigDecimal.valueOf(200), 2, RoundingMode.HALF_UP);
+                sgstAmt = cgstAmt;
+            } else {
+                // Inter-state: full rate as IGST — divide by 100
                 igstAmt = taxableAmount
                         .multiply(gstRate)
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -126,10 +145,9 @@ public class InvoiceService {
                     .add(cgstAmt)
                     .add(sgstAmt)
                     .add(igstAmt)
-                    .setScale(2,RoundingMode.HALF_UP);
+                    .setScale(2, RoundingMode.HALF_UP);
 
-            // Build line item — invoice field set to null for now
-            // We link it to the parent invoice in Step 8 below
+            // Build line item — invoice linked after parent invoice is built
             InvoiceLineItem lineItem = InvoiceLineItem.builder()
                     .product(orderItem.getProduct())
                     .hsnCode(orderItem.getProduct().getHsnCode())
@@ -145,58 +163,56 @@ public class InvoiceService {
 
             lineItems.add(lineItem);
 
+            // Accumulate invoice totals
             totalSubtotal = totalSubtotal.add(taxableAmount);
             totalDiscount = totalDiscount.add(discountAmount);
             totalCgst = totalCgst.add(cgstAmt);
             totalSgst = totalSgst.add(sgstAmt);
             totalIgst = totalIgst.add(igstAmt);
             grandTotal = grandTotal.add(lineTotal);
-
         }
-        // Step 7 — Build the Invoice entity with all computed totals
+
+        // Step 8 — Build Invoice entity
         Invoice invoice = Invoice.builder()
                 .order(order)
                 .rep(order.getRep())
+                .chemist(chemist)
+                .stockist(stockist)
+                .billedTo(billedTo)
                 .invoiceNumber(invoiceNumber)
                 .invoiceDate(LocalDate.now())
                 .taxType(taxType)
-                .subtotal(totalSubtotal.setScale(2,RoundingMode.HALF_UP))
+                .subtotal(totalSubtotal.setScale(2, RoundingMode.HALF_UP))
                 .totalDiscount(totalDiscount.setScale(2, RoundingMode.HALF_UP))
                 .totalCgst(totalCgst.setScale(2, RoundingMode.HALF_UP))
-                .totalSgst(totalSgst.setScale(2,RoundingMode.HALF_UP))
+                .totalSgst(totalSgst.setScale(2, RoundingMode.HALF_UP))
                 .totalIgst(totalIgst.setScale(2, RoundingMode.HALF_UP))
                 .grandTotal(grandTotal.setScale(2, RoundingMode.HALF_UP))
                 .build();
 
-        // Step 8 — Link each line item back to the parent invoice
-        // This must happen after invoice is built to avoid circular reference
-
-        lineItems.forEach(item->item.setInvoice(invoice));
+        // Step 9 — Link line items to invoice
+        lineItems.forEach(item -> item.setInvoice(invoice));
         invoice.getLineItems().addAll(lineItems);
 
-        // Step 9 — Save invoice, cascade saves all line items automatically
-        // Re-fetch with JOIN FETCH so response has all relationships populated
-
+        // Step 10 — Save and re-fetch for complete response
         Invoice saved = invoiceRepository.save(invoice);
         return invoiceMapper.toDto(
                 invoiceRepository.findByIdWithDetails(saved.getId()).orElseThrow()
         );
-
-
     }
 
     @Transactional
-    public InvoiceDto updateInvoiceStatus(UUID id, InvoiceStatus newStatus){
+    public InvoiceDto updateInvoiceStatus(UUID id, InvoiceStatus newStatus) {
         Invoice invoice = invoiceRepository.findByIdWithDetails(id)
-                .orElseThrow(()->new ResourceNotFoundException("Invoice","id",id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Invoice", "id", id));
         invoice.setStatus(newStatus);
         invoiceRepository.save(invoice);
-        return invoiceMapper.toDto(invoiceRepository.findByIdWithDetails(id).orElseThrow());
+        return invoiceMapper.toDto(
+                invoiceRepository.findByIdWithDetails(id).orElseThrow()
+        );
     }
 
-
-    // Calls PostgreSQL SEQUENCE — atomic, gapless, legally compliant
-    // Format: VED-2026-000001
     private String generateInvoiceNumber() {
         Long nextVal = invoiceRepository.getNextSequenceValue();
         return String.format("VED-%d-%06d", LocalDate.now().getYear(), nextVal);

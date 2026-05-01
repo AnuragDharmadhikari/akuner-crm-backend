@@ -3,55 +3,66 @@ package org.ved.crm.order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
+    // JOIN FETCH chemist always — it is never null
+    // LEFT JOIN FETCH stockist — it can be null for DIRECT orders
     @Query("""
-        SELECT o FROM Order o
-        JOIN FETCH o.rep
-        JOIN FETCH o.stockist
-        LEFT JOIN FETCH o.orderItems oi
-        LEFT JOIN FETCH oi.product
-        WHERE o.id = :id
-    """)
+            SELECT o FROM Order o
+            JOIN FETCH o.rep r
+            JOIN FETCH o.chemist c
+            LEFT JOIN FETCH o.stockist s
+            JOIN FETCH o.orderItems oi
+            JOIN FETCH oi.product p
+            WHERE o.id = :id
+            """)
     Optional<Order> findByIdWithDetails(@Param("id") UUID id);
 
     @Query("""
-        SELECT o FROM Order o
-        JOIN FETCH o.rep
-        JOIN FETCH o.stockist
-        LEFT JOIN FETCH o.orderItems oi
-        LEFT JOIN FETCH oi.product
-        ORDER BY o.orderDate DESC
-    """)
+            SELECT DISTINCT o FROM Order o
+            JOIN FETCH o.rep r
+            JOIN FETCH o.chemist c
+            LEFT JOIN FETCH o.stockist s
+            JOIN FETCH o.orderItems oi
+            JOIN FETCH oi.product p
+            """)
     List<Order> findAllWithDetails();
 
     @Query("""
-        SELECT o FROM Order o
-        JOIN FETCH o.rep
-        JOIN FETCH o.stockist
-        LEFT JOIN FETCH o.orderItems oi
-        LEFT JOIN FETCH oi.product
-        WHERE o.stockist.id = :stockistId
-        ORDER BY o.orderDate DESC
-    """)
-    List<Order> findByStockistIdWithDetails(
-            @Param("stockistId") UUID stockistId);
+            SELECT DISTINCT o FROM Order o
+            JOIN FETCH o.rep r
+            JOIN FETCH o.chemist c
+            LEFT JOIN FETCH o.stockist s
+            JOIN FETCH o.orderItems oi
+            JOIN FETCH oi.product p
+            WHERE o.stockist.id = :stockistId
+            """)
+    List<Order> findByStockistIdWithDetails(@Param("stockistId") UUID stockistId);
 
     @Query("""
-        SELECT o FROM Order o
-        JOIN FETCH o.rep
-        JOIN FETCH o.stockist
-        LEFT JOIN FETCH o.orderItems oi
-        LEFT JOIN FETCH oi.product
-        WHERE o.rep.id = :repId
-        ORDER BY o.orderDate DESC
-    """)
+            SELECT DISTINCT o FROM Order o
+            JOIN FETCH o.rep r
+            JOIN FETCH o.chemist c
+            LEFT JOIN FETCH o.stockist s
+            JOIN FETCH o.orderItems oi
+            JOIN FETCH oi.product p
+            WHERE o.chemist.id = :chemistId
+            """)
+    List<Order> findByChemistIdWithDetails(@Param("chemistId") UUID chemistId);
+
+    @Query("""
+            SELECT DISTINCT o FROM Order o
+            JOIN FETCH o.rep r
+            JOIN FETCH o.chemist c
+            LEFT JOIN FETCH o.stockist s
+            JOIN FETCH o.orderItems oi
+            JOIN FETCH oi.product p
+            WHERE o.rep.id = :repId
+            """)
     List<Order> findByRepIdWithDetails(@Param("repId") UUID repId);
 }

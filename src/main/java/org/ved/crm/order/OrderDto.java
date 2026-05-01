@@ -10,10 +10,22 @@ public record OrderDto(
         UUID id,
         UUID repId,
         String repName,
+
+        // Chemist fields — always present, chemist is always the buyer
+        UUID chemistId,
+        String chemistFirmName,
+        String chemistGstin,
+        String chemistState,
+
+        // Stockist fields — nullable when fulfillmentType is DIRECT
         UUID stockistId,
         String stockistFirmName,
         String stockistGstin,
         String stockistState,
+
+        // VIA_STOCKIST or DIRECT
+        FulfillmentType fulfillmentType,
+
         LocalDate orderDate,
         OrderStatus status,
         BigDecimal totalAmount,
