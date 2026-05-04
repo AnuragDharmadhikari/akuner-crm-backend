@@ -42,5 +42,6 @@ public class Return extends BaseAuditEntity {
     private ReturnStatus status = ReturnStatus.PENDING;
 
     @OneToMany(mappedBy = "returnDoc" , cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ReturnItem> returnItems = new ArrayList<>();
 }
