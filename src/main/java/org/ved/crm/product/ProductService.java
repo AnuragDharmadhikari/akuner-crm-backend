@@ -38,6 +38,13 @@ public class ProductService {
 
     @Transactional
     public ProductDto createProduct(CreateProductRequest request){
+
+        if (request.dealerPrice().compareTo(request.mrp()) > 0) {
+            throw new IllegalArgumentException(
+                    "Dealer price (" + request.dealerPrice()
+                            + ") cannot exceed MRP (" + request.mrp() + ")");
+        }
+
         Product product = Product.builder()
                 .name(request.name())
                 .molecule(request.molecule())
@@ -57,6 +64,12 @@ public class ProductService {
     public ProductDto updateProduct(UUID id,UpdateProductRequest request){
         Product product = productRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("Product","id",id));
+
+        if (request.dealerPrice().compareTo(request.mrp()) > 0) {
+            throw new IllegalArgumentException(
+                    "Dealer price (" + request.dealerPrice()
+                            + ") cannot exceed MRP (" + request.mrp() + ")");
+        }
 
         product.setName(request.name());
         product.setMolecule(request.molecule());

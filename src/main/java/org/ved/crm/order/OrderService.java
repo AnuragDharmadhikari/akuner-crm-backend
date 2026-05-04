@@ -73,10 +73,21 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User", "id", request.repId()));
 
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Rep is deactivated and cannot place orders: " + rep.getFullName());
+        }
+
         // Validate chemist — always required
         Chemist chemist = chemistRepository.findByIdWithDetails(request.chemistId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Chemist", "id", request.chemistId()));
+
+        if (!chemist.isActive()) {
+            throw new IllegalArgumentException(
+                    "Chemist is deactivated and cannot place orders: "
+                            + chemist.getFirmName());
+        }
 
         // Validate stockist only if VIA_STOCKIST
         Stockist stockist = null;
@@ -88,6 +99,12 @@ public class OrderService {
             stockist = stockistRepository.findByIdWithDetails(request.stockistId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Stockist", "id", request.stockistId()));
+
+            if (!stockist.isActive()) {
+                throw new IllegalArgumentException(
+                        "Stockist is deactivated and cannot fulfill orders: "
+                                + stockist.getFirmName());
+            }
         }
 
         // Build order
@@ -162,6 +179,12 @@ public class OrderService {
             Product product = productRepository.findById(req.productId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Product", "id", req.productId()));
+
+            if (!product.isActive()) {
+                throw new IllegalArgumentException(
+                        "Product is deactivated and cannot be ordered: "
+                                + product.getName());
+            }
 
             BigDecimal unitPrice = product.getDealerPrice();
             BigDecimal discountPct = req.discountPct() != null

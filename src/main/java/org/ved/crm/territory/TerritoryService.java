@@ -48,6 +48,13 @@ public class TerritoryService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Territory", "id", id));
 
+        if (!territory.isActive() &&
+                (request.isActive() == null || !request.isActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot update a deactivated territory: " + territory.getName()
+                            + ". Reactivate first.");
+        }
+
         territory.setName(request.name());
         territory.setState(request.state());
         territory.setZone(request.zone());

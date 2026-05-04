@@ -45,8 +45,18 @@ public class CallTargetService {
         User rep = userRepository.findById(request.repId())
                 .orElseThrow(()->new ResourceNotFoundException("User","id",request.repId()));
 
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot assign target to deactivated rep: " + rep.getFullName());
+        }
+
         User assignedBy = userRepository.findById(request.assignedById())
                 .orElseThrow(()->new ResourceNotFoundException("User","id",request.assignedById()));
+
+        if (!assignedBy.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot assign target from deactivated user: " + assignedBy.getFullName());
+        }
 
         if(callTargetRepository.existsByRepIdAndMonthAndYear(request.repId(),request.month(),request.year())){
             throw new IllegalArgumentException("Target already exists for this rep in "

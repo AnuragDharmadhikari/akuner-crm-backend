@@ -59,6 +59,11 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User", "id", id));
 
+        if (!user.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot update a deactivated user: " + user.getFullName());
+        }
+
         if (request.fullName() != null) {
             user.setFullName(request.fullName());
         }
@@ -75,6 +80,11 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User", "id", id));
+
+        if (!user.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot change password for a deactivated user: " + user.getFullName());
+        }
 
         if (!passwordEncoder.matches(
                 request.currentPassword(), user.getPasswordHash())) {

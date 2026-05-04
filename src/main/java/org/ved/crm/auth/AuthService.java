@@ -3,6 +3,7 @@ package org.ved.crm.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -61,6 +62,11 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow();
+
+        if (!user.isActive()) {
+            throw new BadCredentialsException(
+                    "Account is deactivated. Please contact your administrator.");
+        }
 
         var userDetails = org.springframework.security.core.userdetails
                 .User.builder()

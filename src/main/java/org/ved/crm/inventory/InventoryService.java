@@ -77,6 +77,12 @@ public class InventoryService {
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(()->new ResourceNotFoundException("Product","id",request.productId()));
 
+        if (!product.isActive()) {
+            throw new IllegalArgumentException(
+                    "Product is deactivated and cannot be added to batch: "
+                            + product.getName());
+        }
+
         // Step 2 — Check duplicate batch number for this product
         // Same batch number can exist for different products
         // but not for the same product twice

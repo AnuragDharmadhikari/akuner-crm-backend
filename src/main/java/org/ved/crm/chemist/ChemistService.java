@@ -49,6 +49,11 @@ public class ChemistService {
         User rep = userRepository.findById(request.assignedRepId())
                 .orElseThrow(()->new ResourceNotFoundException("User","id",request.assignedRepId()));
 
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot assign chemist to deactivated rep: " + rep.getFullName());
+        }
+
         if(chemistRepository.existsByDrugLicenseNumber(request.drugLicenseNumber())){
             throw new IllegalArgumentException("Chemist with Drug License Number already exists: "+request.drugLicenseNumber());
         }
@@ -82,8 +87,19 @@ public class ChemistService {
         Chemist chemist = chemistRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Chemist","id",id));
 
+        if (!chemist.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot update a deactivated chemist: "
+                            + chemist.getFirmName());
+        }
+
         User rep = userRepository.findById(request.assignedRepId())
                 .orElseThrow(()->new ResourceNotFoundException("User","id",request.assignedRepId().toString()));
+
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot assign chemist to deactivated rep: " + rep.getFullName());
+        }
 
         if(!request.drugLicenseNumber().equals(chemist.getDrugLicenseNumber())){
             if(chemistRepository.existsByDrugLicenseNumber(request.drugLicenseNumber())){

@@ -9,6 +9,7 @@ import org.ved.crm.billing.InvoiceStatus;
 import org.ved.crm.chemist.Chemist;
 import org.ved.crm.chemist.ChemistRepository;
 import org.ved.crm.common.exception.ResourceNotFoundException;
+import org.ved.crm.returns.CreditNoteRepository;
 import org.ved.crm.stockist.Stockist;
 import org.ved.crm.stockist.StockistRepository;
 
@@ -28,6 +29,7 @@ public class PaymentService {
     private final StockistRepository stockistRepository;
     private final ChemistRepository chemistRepository;
     private final PaymentMapper paymentMapper;
+    private final CreditNoteRepository creditNoteRepository;
 
     // GET all payments
     public List<PaymentDto> getAllPayments(){
@@ -126,13 +128,17 @@ public class PaymentService {
             }
 
             // Get total already allocated to this invoice from previous payments
-            BigDecimal alreadyAllocated = paymentAllocationRepository.getTotalAllocatedForInvoice(allocationReq.invoiceId());
+            BigDecimal alreadyAllocated = paymentAllocationRepository
+                    .getTotalAllocatedForInvoice(allocationReq.invoiceId());
 
-            // Outstanding = grand total - already allocated
-            BigDecimal outstanding = invoice.getGrandTotal().subtract(alreadyAllocated);
+            BigDecimal alreadyCredited = creditNoteRepository
+                    .getTotalCreditAppliedForInvoice(allocationReq.invoiceId());
 
-            // Outstanding = grand total - already allocated
-            if(allocationReq.allocatedAmount().compareTo(outstanding) > 0){
+            BigDecimal outstanding = invoice.getGrandTotal()
+                    .subtract(alreadyAllocated)
+                    .subtract(alreadyCredited);
+
+            if (allocationReq.allocatedAmount().compareTo(outstanding) > 0) {
                 throw new IllegalArgumentException(
                         "Allocation amount (" + allocationReq.allocatedAmount()
                                 + ") exceeds outstanding balance ("
@@ -174,28 +180,33 @@ public class PaymentService {
         // Step 8 — Save payment — cascade saves all allocations automatically
         Payment saved = paymentRepository.save(payment);
 
-        // Step 9 — Update invoice statuses based on total payments received
-        // We do this AFTER saving so the new allocation is included in the sum
-        for(PaymentAllocationRequest allocationReq : request.allocations()){
+        // Step 9 — Update invoice statuses based on total money received
+// Accounts for BOTH payment allocations AND credit notes already applied
+        for (PaymentAllocationRequest allocationReq : request.allocations()) {
+
             Invoice invoice = invoiceRepository.findByIdWithDetails(
                     allocationReq.invoiceId()).orElseThrow();
 
-            // Get total allocated including the one we just saved
-            BigDecimal totalAllocatedForInvoice = paymentAllocationRepository.getTotalAllocatedForInvoice(allocationReq.invoiceId());
+            // Total paid via payment allocations — includes this new payment
+            BigDecimal totalPaid = paymentAllocationRepository
+                    .getTotalAllocatedForInvoice(allocationReq.invoiceId());
 
-            //Determine new invoice status
+            // Total credited via credit notes already applied to this invoice
+            BigDecimal totalCredited = creditNoteRepository
+                    .getTotalCreditAppliedForInvoice(allocationReq.invoiceId());
 
-            // Determine new invoice status
-            if (totalAllocatedForInvoice.compareTo(invoice.getGrandTotal()) >= 0) {
-                // Fully paid
+            // True outstanding = grandTotal - payments - credits
+            BigDecimal outstanding = invoice.getGrandTotal()
+                    .subtract(totalPaid)
+                    .subtract(totalCredited);
+
+            if (outstanding.compareTo(BigDecimal.ZERO) <= 0) {
                 invoice.setStatus(InvoiceStatus.PAID);
             } else {
-                // Partially paid
                 invoice.setStatus(InvoiceStatus.PARTIALLY_PAID);
             }
 
             invoiceRepository.save(invoice);
-
         }
 
         // Step 10 — Re-fetch with JOIN FETCH for complete response

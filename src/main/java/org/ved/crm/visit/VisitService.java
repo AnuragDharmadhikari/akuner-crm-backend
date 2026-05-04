@@ -59,8 +59,19 @@ public class VisitService {
         User rep = userRepository.findById(request.repId())
                 .orElseThrow(()->new ResourceNotFoundException("User","id",request.repId()));
 
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Rep is deactivated and cannot log visits: " + rep.getFullName());
+        }
+
         Doctor doctor = doctorRepository.findById(request.doctorId())
                 .orElseThrow(()->new ResourceNotFoundException("Doctor","id",request.doctorId()));
+
+        if (!doctor.isActive()) {
+            throw new IllegalArgumentException(
+                    "Doctor is deactivated and cannot be visited: "
+                            + doctor.getFullName());
+        }
 
         Visit visit = Visit.builder()
                 .rep(rep)
@@ -107,6 +118,13 @@ public class VisitService {
         for(VisitProductRequest req: requests){
             Product product = productRepository.findById(req.productId())
                     .orElseThrow(()->new ResourceNotFoundException("Product","id",req.productId()));
+
+            if (!product.isActive()) {
+                throw new IllegalArgumentException(
+                        "Product is deactivated and cannot be detailed: "
+                                + product.getName());
+            }
+
             result.add(VisitProduct.builder()
                     .visit(visit)
                     .product(product)

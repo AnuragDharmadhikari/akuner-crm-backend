@@ -48,6 +48,11 @@ public class StockistService {
         User rep = userRepository.findById(request.assignedRepId())
                 .orElseThrow(()->new ResourceNotFoundException("User","id",request.assignedRepId()));
 
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot assign stockist to deactivated rep: " + rep.getFullName());
+        }
+
         Stockist stockist = Stockist.builder()
                 .assignedRep(rep)
                 .firmName(request.firmName())
@@ -68,6 +73,13 @@ public class StockistService {
         Stockist stockist = stockistRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Stockist","id",id));
 
+        if (!stockist.isActive() &&
+                (request.isActive() == null || !request.isActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot update a deactivated stockist: " + stockist.getFirmName()
+                            + ". Reactivate first.");
+        }
+
         if (request.gstin() != null &&
                 !request.gstin().equals(stockist.getGstin()) &&
                 stockistRepository.existsByGstin(request.gstin())) {
@@ -78,6 +90,11 @@ public class StockistService {
         User rep = userRepository.findById(request.assignedRepId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User", "id", request.assignedRepId()));
+
+        if (!rep.isActive()) {
+            throw new IllegalArgumentException(
+                    "Cannot assign stockist to deactivated rep: " + rep.getFullName());
+        }
 
         stockist.setAssignedRep(rep);
         stockist.setFirmName(request.firmName());
