@@ -1,6 +1,7 @@
 package org.ved.crm.target;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ public class CallTargetService {
     private final UserRepository userRepository;
     private final CallTargetMapper callTargetMapper;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<CallTargetDto> getTargetsByRep(UUID repId){
         return callTargetRepository.findByRepIdWithDetails(repId)
                 .stream()
@@ -26,12 +28,14 @@ public class CallTargetService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public CallTargetDto getTargetById(UUID id){
         return callTargetRepository.findByIdWithDetails(id)
                 .map(callTargetMapper::toDto)
                 .orElseThrow(()->new ResourceNotFoundException("CallTarget","id",id));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public CallTargetDto getTargetByRepAndMonth(UUID repId, Integer month, Integer year){
         CallTarget target = callTargetRepository.findByRepIdAndMonthAndYear(repId,month,year)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -40,6 +44,7 @@ public class CallTargetService {
         return callTargetMapper.toDto(target);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public CallTargetDto createTarget(CreateCallTargetRequest request){
         User rep = userRepository.findById(request.repId())
@@ -75,6 +80,7 @@ public class CallTargetService {
         return callTargetMapper.toDto(callTargetRepository.findByIdWithDetails(saved.getId()).orElseThrow());
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public CallTargetDto updateTarget(UUID id, UpdateCallTargetRequest request){
 

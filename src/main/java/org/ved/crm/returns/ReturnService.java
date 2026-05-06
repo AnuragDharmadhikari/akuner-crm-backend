@@ -1,6 +1,7 @@
 package org.ved.crm.returns;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.Payment.PaymentAllocationRepository;
@@ -46,6 +47,7 @@ public class ReturnService {
     // GET METHODS
     // ─────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<ReturnDto> getAllReturns() {
         return returnRepository.findAllWithDetails()
                 .stream()
@@ -53,6 +55,7 @@ public class ReturnService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public ReturnDto getReturnById(UUID id) {
         Return returnDoc = returnRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -60,6 +63,7 @@ public class ReturnService {
         return returnMapper.toDto(returnDoc);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ReturnDto> getReturnsByChemist(UUID chemistId) {
         return returnRepository.findByChemistId(chemistId)
                 .stream()
@@ -67,6 +71,7 @@ public class ReturnService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ReturnDto> getReturnsByStockist(UUID stockistId) {
         return returnRepository.findByStockistId(stockistId)
                 .stream()
@@ -74,6 +79,7 @@ public class ReturnService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<CreditNoteDto> getOpenCreditNotesByChemist(UUID chemistId) {
         return creditNoteRepository.findOpenCreditNotesByChemist(chemistId)
                 .stream()
@@ -81,6 +87,7 @@ public class ReturnService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<CreditNoteDto> getOpenCreditNotesByStockist(UUID stockistId) {
         return creditNoteRepository.findOpenCreditNotesByStockist(stockistId)
                 .stream()
@@ -88,6 +95,7 @@ public class ReturnService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public CreditNoteDto getCreditNoteById(UUID id) {
         CreditNote creditNote = creditNoteRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -101,6 +109,7 @@ public class ReturnService {
     // No stock or financial changes at this stage
     // ─────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public ReturnDto createReturn(CreateReturnRequest request) {
 
@@ -183,6 +192,7 @@ public class ReturnService {
     // Raises credit note for full return value
     // ─────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public ReturnDto processReturn(UUID returnId) {
 
@@ -279,6 +289,7 @@ public class ReturnService {
     // Marks return as rejected — no stock or financial changes
     // ─────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public ReturnDto rejectReturn(UUID returnId) {
 
@@ -305,6 +316,7 @@ public class ReturnService {
     // Updates invoice status based on true outstanding balance
     // ─────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public CreditNoteDto applyCreditNote(UUID creditNoteId, UUID invoiceId) {
 

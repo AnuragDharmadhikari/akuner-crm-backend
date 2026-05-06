@@ -1,6 +1,7 @@
 package org.ved.crm.order;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.chemist.Chemist;
@@ -33,6 +34,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final SchemeService schemeService;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<OrderDto> getAllOrders() {
         return orderRepository.findAllWithDetails()
                 .stream()
@@ -40,12 +42,14 @@ public class OrderService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public OrderDto getOrderById(UUID id) {
         return orderRepository.findByIdWithDetails(id)
                 .map(orderMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<OrderDto> getOrdersByChemist(UUID chemistId) {
         return orderRepository.findByChemistIdWithDetails(chemistId)
                 .stream()
@@ -53,6 +57,7 @@ public class OrderService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<OrderDto> getOrdersByStockist(UUID stockistId) {
         return orderRepository.findByStockistIdWithDetails(stockistId)
                 .stream()
@@ -60,6 +65,7 @@ public class OrderService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<OrderDto> getOrdersByRep(UUID repId) {
         return orderRepository.findByRepIdWithDetails(repId)
                 .stream()
@@ -67,6 +73,7 @@ public class OrderService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'REP')")
     @Transactional
     public OrderDto createOrder(CreateOrderRequest request) {
 
@@ -152,6 +159,7 @@ public class OrderService {
                 orderRepository.findByIdWithDetails(saved.getId()).orElseThrow());
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'REP')")
     @Transactional
     public OrderDto updateOrder(UUID id, UpdateOrderRequest request) {
 
@@ -182,6 +190,7 @@ public class OrderService {
                 orderRepository.findByIdWithDetails(id).orElseThrow());
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public OrderDto updateOrderStatus(UUID id, OrderStatus status) {
         Order order = orderRepository.findByIdWithDetails(id)

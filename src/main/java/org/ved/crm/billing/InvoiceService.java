@@ -2,6 +2,7 @@ package org.ved.crm.billing;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.chemist.Chemist;
@@ -34,6 +35,7 @@ public class InvoiceService {
     @Value("${vedpharm.company.state}")
     private String companyState;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<InvoiceDto> getAllInvoices() {
         return invoiceRepository.findAllWithDetails()
                 .stream()
@@ -41,6 +43,7 @@ public class InvoiceService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public InvoiceDto getInvoiceById(UUID id) {
         Invoice invoice = invoiceRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -48,6 +51,7 @@ public class InvoiceService {
         return invoiceMapper.toDto(invoice);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public InvoiceDto generateInvoice(UUID orderId) {
 
@@ -219,6 +223,7 @@ public class InvoiceService {
         );
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public InvoiceDto updateInvoiceStatus(UUID id, InvoiceStatus newStatus) {
         Invoice invoice = invoiceRepository.findByIdWithDetails(id)

@@ -1,6 +1,7 @@
 package org.ved.crm.chemist;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -20,6 +21,7 @@ public class ChemistService {
     private final ChemistMapper chemistMapper;
 
     // GET all active chemists
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ChemistDto> getAllChemists(){
         return chemistRepository.findAllActiveWithDetails()
                 .stream()
@@ -28,6 +30,7 @@ public class ChemistService {
     }
 
     // GET chemist by ID
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public ChemistDto getChemistById(UUID id){
         Chemist chemist = chemistRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Chemist","id",id));
@@ -35,6 +38,7 @@ public class ChemistService {
     }
 
     // GET chemists by rep
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ChemistDto> getChemistByRep(UUID repID){
         return chemistRepository.findByAssignedRepId(repID)
                 .stream()
@@ -43,6 +47,7 @@ public class ChemistService {
     }
 
     //CREATE Chemist
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public ChemistDto createChemist(CreateChemistRequest request){
 
@@ -82,6 +87,7 @@ public class ChemistService {
         );
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public ChemistDto updateChemist(UUID id, UpdateChemistRequest request){
         Chemist chemist = chemistRepository.findByIdWithDetails(id)
@@ -138,6 +144,7 @@ public class ChemistService {
         );
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public void deactivateChemist(UUID id) {
         Chemist chemist = chemistRepository.findByIdWithDetails(id)

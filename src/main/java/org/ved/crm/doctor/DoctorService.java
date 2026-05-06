@@ -1,5 +1,6 @@
 package org.ved.crm.doctor;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class DoctorService {
     private final DoctorMapper doctorMapper;
     private final TerritoryRepository territoryRepository;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<DoctorDto> getAllActiveDoctors() {
         return doctorRepository.findByIsActiveTrue()
                 .stream()
@@ -26,6 +28,7 @@ public class DoctorService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public DoctorDto getDoctorById(UUID id) {
         return doctorRepository.findByIdWithDetails(id)
                 .map(doctorMapper::toDto)
@@ -33,6 +36,7 @@ public class DoctorService {
                         "Doctor", "id", id));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<DoctorDto> getDoctorsByTerritory(UUID territoryId) {
         return doctorRepository.findByTerritoryId(territoryId)
                 .stream()
@@ -40,6 +44,7 @@ public class DoctorService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<DoctorDto> getDoctorsBySpecialty(String specialty) {
         return doctorRepository.findBySpecialty(specialty)
                 .stream()
@@ -47,6 +52,7 @@ public class DoctorService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public DoctorDto createDoctor(CreateDoctorRequest request) {
         Doctor doctor = Doctor.builder()
@@ -74,6 +80,7 @@ public class DoctorService {
                         doctor.getId()).orElseThrow());
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public DoctorDto updateDoctor(UUID id, UpdateDoctorRequest request) {
         Doctor doctor = doctorRepository.findByIdWithDetails(id)
@@ -112,6 +119,7 @@ public class DoctorService {
                 doctorRepository.findByIdWithDetails(id).orElseThrow());
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public void deactivateDoctor(UUID id) {
         Doctor doctor = doctorRepository.findById(id)

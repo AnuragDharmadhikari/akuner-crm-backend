@@ -1,6 +1,7 @@
 package org.ved.crm.visit;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -34,6 +35,7 @@ public class VisitService {
     private final CallTargetRepository callTargetRepository;
     private final VisitMapper visitMapper;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<VisitDto> getAllVisits() {
         return visitRepository.findAllWithDetails()
                 .stream()
@@ -41,12 +43,14 @@ public class VisitService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public VisitDto getVisitById(UUID id) {
         Visit visit = visitRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Visit", "id", id));
         return visitMapper.toDto(visit);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<VisitDto> getVisitsByDoctor(UUID doctorId) {
         return visitRepository.findByDoctorIdWithDetails(doctorId)
                 .stream()
@@ -54,6 +58,7 @@ public class VisitService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<VisitDto> getVisitsByRep(UUID repId) {
         return visitRepository.findByRepIdWithDetails(repId)
                 .stream()
@@ -61,6 +66,7 @@ public class VisitService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'REP')")
     @Transactional
     public VisitDto createVisit(CreateVisitRequest request) {
 
@@ -131,6 +137,7 @@ public class VisitService {
         return result;
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'REP')")
     @Transactional
     public VisitDto updateVisit(UUID id, UpdateVisitRequest request) {
 

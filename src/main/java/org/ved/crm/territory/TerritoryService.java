@@ -1,5 +1,6 @@
 package org.ved.crm.territory;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class TerritoryService {
     private final TerritoryRepository territoryRepository;
     private final TerritoryMapper territoryMapper;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<TerritoryDto> getAllTerritories(){
         return territoryRepository.findAll()
                 .stream()
@@ -23,12 +25,14 @@ public class TerritoryService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public TerritoryDto getTerritoryById(UUID id){
         Territory territory = territoryRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("Territory","id",id));
         return territoryMapper.toDto(territory);
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public TerritoryDto createTerritory(CreateTerritoryRequest request) {
         Territory territory = Territory.builder()
@@ -42,6 +46,7 @@ public class TerritoryService {
                 territoryRepository.findById(saved.getId()).orElseThrow());
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public TerritoryDto updateTerritory(UUID id, UpdateTerritoryRequest request) {
         Territory territory = territoryRepository.findById(id)
@@ -68,6 +73,7 @@ public class TerritoryService {
                 territoryRepository.findById(id).orElseThrow());
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public void deactivateTerritory(UUID id) {
         Territory territory = territoryRepository.findById(id)

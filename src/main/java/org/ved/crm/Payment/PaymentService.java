@@ -12,6 +12,7 @@ import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.returns.CreditNoteRepository;
 import org.ved.crm.stockist.Stockist;
 import org.ved.crm.stockist.StockistRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,6 +35,7 @@ public class PaymentService {
     private final CreditNoteRepository creditNoteRepository;
 
     // GET all payments
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<PaymentDto> getAllPayments(){
         return paymentRepository.findAllWithDetails()
                 .stream()
@@ -42,6 +44,7 @@ public class PaymentService {
     }
 
     // GET payment by ID
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public PaymentDto getPaymentById(UUID id){
         Payment payment = paymentRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Payment","id",id));
@@ -49,6 +52,7 @@ public class PaymentService {
     }
 
     // GET payments by stockist
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<PaymentDto> getPaymentsByStockist(UUID stockistId){
         return paymentRepository.findByStockistId(stockistId)
                 .stream()
@@ -57,6 +61,7 @@ public class PaymentService {
     }
 
     // GET payments by chemist
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<PaymentDto> getPaymentsByChemist(UUID chemistId) {
         return paymentRepository.findByChemistId(chemistId)
                 .stream()
@@ -65,7 +70,7 @@ public class PaymentService {
     }
 
     // CREATE payment — the most complex method
-
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public PaymentDto createPayment(CreatePaymentRequest request){
 

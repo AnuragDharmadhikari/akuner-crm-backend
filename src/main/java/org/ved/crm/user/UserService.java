@@ -2,6 +2,7 @@ package org.ved.crm.user;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +23,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<UserDto> getAllUsers(){
         return userRepository.findAll()
                 .stream()
@@ -29,12 +31,14 @@ public class UserService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public UserDto getUserById(UUID id){
         User user = userRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("User","id",id));
         return userMapper.toDto(user);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<UserDto> getUsersByRole(Role role) {
         return userRepository.findByRole(role)
                 .stream()
@@ -42,7 +46,7 @@ public class UserService {
                 .toList();
     }
 
-    // Gets the currently logged in user from JWT context
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public UserDto getCurrentUser() {
         String email = Objects.requireNonNull(SecurityContextHolder.getContext()
                         .getAuthentication())
@@ -53,6 +57,7 @@ public class UserService {
         return userMapper.toDto(user);
     }
 
+    @PreAuthorize("hasRole('OWNER') or @userSecurity.isOwner(#id, authentication)")
     @Transactional
     public UserDto updateUser(UUID id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
@@ -75,6 +80,7 @@ public class UserService {
         return userMapper.toDto(userRepository.findById(id).orElseThrow());
     }
 
+    @PreAuthorize("hasRole('OWNER') or @userSecurity.isOwner(#id, authentication)")
     @Transactional
     public void changePassword(UUID id, ChangePasswordRequest request) {
         User user = userRepository.findById(id)
@@ -95,6 +101,7 @@ public class UserService {
                 passwordEncoder.encode(request.newPassword()));
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public void deactivateUser(UUID id){
         User user = userRepository.findById(id)

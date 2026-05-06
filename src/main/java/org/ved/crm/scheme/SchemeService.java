@@ -2,6 +2,7 @@ package org.ved.crm.scheme;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.chemist.Chemist;
@@ -36,6 +37,7 @@ public class SchemeService {
 
     // ─── CRUD Methods ─────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<SchemeDto> getSchemesByChemist(UUID chemistId){
         return schemeRepository.findActiveByChemistId(chemistId)
                 .stream()
@@ -43,12 +45,14 @@ public class SchemeService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<SchemeDto> getSchemesByStockist(UUID stockistId){
         return schemeRepository.findActiveByStockistId(stockistId)
                 .stream().map(schemeMapper::toDto)
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public SchemeDto getSchemeById(UUID id){
         Scheme scheme = schemeRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Scheme","id",id));
@@ -71,6 +75,7 @@ public class SchemeService {
                 .toList();
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public SchemeDto createScheme(CreateSchemeRequest request){
 
@@ -201,6 +206,7 @@ public class SchemeService {
         );
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public SchemeDto updateScheme(UUID id, UpdateSchemeRequest request) {
 

@@ -1,6 +1,7 @@
 package org.ved.crm.stockist;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ public class StockistService {
     private final StockistMapper stockistMapper;
     private final UserRepository userRepository;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<StockistDto> getAllActiveStockists(){
         return stockistRepository.findAllActive()
                 .stream()
@@ -26,12 +28,14 @@ public class StockistService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public StockistDto getStockistById(UUID id){
         return stockistRepository.findByIdWithDetails(id)
                 .map(stockistMapper::toDto)
                 .orElseThrow(()->new ResourceNotFoundException("Stockist","id",id));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<StockistDto> getStockistsByRep(UUID repId){
         return stockistRepository.findByAssignedRepId(repId)
                 .stream()
@@ -39,6 +43,7 @@ public class StockistService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public StockistDto createStockist(CreateStockistRequest request){
         if(request.gstin() !=null && stockistRepository.existsByGstin(request.gstin())){
@@ -68,6 +73,7 @@ public class StockistService {
         return stockistMapper.toDto(stockistRepository.findByIdWithDetails(stockist.getId()).orElseThrow());
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     @Transactional
     public StockistDto updateStockist(UUID id, UpdateStockistRequest request){
         Stockist stockist = stockistRepository.findByIdWithDetails(id)
@@ -115,6 +121,7 @@ public class StockistService {
 
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public void deactivateStockist(UUID id) {
         Stockist stockist = stockistRepository.findById(id)

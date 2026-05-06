@@ -2,6 +2,7 @@ package org.ved.crm.inventory;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.billing.Invoice;
@@ -30,6 +31,7 @@ public class InventoryService {
     // ─────────────────────────────────────────────
 
     // GET all batches for a product
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<BatchDto> getBatchesByProduct(UUID productId){
         return batchRepository.findAllBatchesByProduct(productId)
                 .stream().map(batchMapper::toDto)
@@ -37,6 +39,7 @@ public class InventoryService {
     }
 
     // GET batch by ID
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public BatchDto getBatchById(UUID id){
         Batch batch = batchRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Batch","id",id));
@@ -44,6 +47,7 @@ public class InventoryService {
     }
 
     // GET all stock movements for a batch — full audit trail
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<StockMovementDto> getMovementsByBatch(UUID batchId){
         return stockMovementRepository.findByBatchId(batchId)
                 .stream()
@@ -52,6 +56,7 @@ public class InventoryService {
     }
 
     // GET near expiry batches — expiring within 90 days
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<BatchDto> getNearExpiryBatches(){
         LocalDate today = LocalDate.now();
         LocalDate warningDate = today.plusDays(90);
@@ -62,6 +67,7 @@ public class InventoryService {
     }
 
     // GET expired batches that still have stock — need writeoff
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<BatchDto> getExpiredBatchesWithStock() {
         return batchRepository.findExpiredBatchesWithStock(LocalDate.now())
                 .stream()
@@ -70,6 +76,7 @@ public class InventoryService {
     }
 
     // ADD new batch — stock received from manufacturer
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public BatchDto addBatch(AddBatchRequest request){
 
@@ -124,7 +131,7 @@ public class InventoryService {
     }
 
     // MANUAL stock adjustment — owner corrects discrepancies
-
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public BatchDto adjustStock(UUID batchId, AdjustStockRequest request){
 
@@ -166,6 +173,7 @@ public class InventoryService {
     }
 
     // WRITE OFF expired stock — marks expired batch as zero
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public BatchDto writeOffExpiredBatch(UUID batchId){
         Batch batch  = batchRepository.findByIdWithDetails(batchId)

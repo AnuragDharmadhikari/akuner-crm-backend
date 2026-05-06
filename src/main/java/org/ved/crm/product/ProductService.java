@@ -1,6 +1,7 @@
 package org.ved.crm.product;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ProductDto> getAllActiveProducts(){
         return productRepository.findByIsActiveTrue()
                 .stream()
@@ -23,12 +25,14 @@ public class ProductService {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public ProductDto getProductById(UUID id){
         return productRepository.findById(id)
                 .map(productMapper::toDto)
                 .orElseThrow(()->new ResourceNotFoundException("Product","id",id));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ProductDto> getProductsByCategory(String category) {
         return productRepository.findByCategoryAndIsActiveTrue(category)
                 .stream()
@@ -36,6 +40,7 @@ public class ProductService {
                 .toList();
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public ProductDto createProduct(CreateProductRequest request){
 
@@ -61,6 +66,7 @@ public class ProductService {
 
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public ProductDto updateProduct(UUID id,UpdateProductRequest request){
         Product product = productRepository.findById(id)
@@ -95,6 +101,7 @@ public class ProductService {
                 productRepository.findById(id).orElseThrow());
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public void deactivateProduct(UUID id){
         Product product = productRepository.findById(id)
