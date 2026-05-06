@@ -7,6 +7,12 @@ public record VisitProductDto(
         UUID productId,
         String productName,
         String hsnCode,
+
+        // Batch from which samples were distributed.
+        // Null when no samples were given on this visit product.
+        UUID batchId,
+        String batchNumber,
+
         Integer samplesGiven,
         String feedback
 ) {}

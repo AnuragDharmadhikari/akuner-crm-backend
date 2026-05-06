@@ -1,6 +1,7 @@
 package org.ved.crm.target;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -45,4 +46,24 @@ public interface CallTargetRepository extends JpaRepository<CallTarget, UUID> {
 
     // Check for duplicate before hitting DB unique constraint
     boolean existsByRepIdAndMonthAndYear(UUID repId, Integer month, Integer year);
+
+    // Increment actual visits when a visit is marked COMPLETED.
+// @Modifying required for any UPDATE/DELETE query in Spring Data JPA.
+// clearAutomatically = true clears the persistence context after update
+// so subsequent reads in the same transaction see the fresh value.
+// Silent no-op if no target exists for this rep/month/year —
+// JPQL UPDATE with zero matching rows does nothing, no exception thrown.
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE CallTarget ct
+        SET ct.actualVisits = ct.actualVisits + 1
+        WHERE ct.rep.id = :repId
+        AND ct.month = :month
+        AND ct.year = :year
+        """)
+    void incrementActualVisits(
+            @Param("repId") UUID repId,
+            @Param("month") int month,
+            @Param("year") int year
+    );
 }

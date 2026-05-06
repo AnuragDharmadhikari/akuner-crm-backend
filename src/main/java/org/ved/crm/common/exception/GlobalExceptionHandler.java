@@ -52,6 +52,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Void> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // temporary — remove after debugging
         return ApiResponse.failure("An unexpected error occurred");
     }
 

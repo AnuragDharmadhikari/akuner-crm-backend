@@ -18,6 +18,8 @@ public interface VisitRepository extends JpaRepository<Visit, UUID> {
         JOIN FETCH v.doctor
         LEFT JOIN FETCH v.visitProducts vp
         LEFT JOIN FETCH vp.product
+        LEFT JOIN FETCH vp.batch b
+        LEFT JOIN FETCH b.product
         WHERE v.id = :id
     """)
     Optional<Visit> findByIdWithDetails(@Param("id") UUID id);
@@ -28,6 +30,8 @@ public interface VisitRepository extends JpaRepository<Visit, UUID> {
         JOIN FETCH v.doctor
         LEFT JOIN FETCH v.visitProducts vp
         LEFT JOIN FETCH vp.product
+        LEFT JOIN FETCH vp.batch b
+        LEFT JOIN FETCH b.product
         WHERE v.doctor.id = :doctorId
         ORDER BY v.visitDate DESC
     """)
@@ -39,6 +43,8 @@ public interface VisitRepository extends JpaRepository<Visit, UUID> {
         JOIN FETCH v.doctor
         LEFT JOIN FETCH v.visitProducts vp
         LEFT JOIN FETCH vp.product
+        LEFT JOIN FETCH vp.batch b
+        LEFT JOIN FETCH b.product
         WHERE v.rep.id = :repId
         ORDER BY v.visitDate DESC
     """)
@@ -50,6 +56,8 @@ public interface VisitRepository extends JpaRepository<Visit, UUID> {
         JOIN FETCH v.doctor
         LEFT JOIN FETCH v.visitProducts vp
         LEFT JOIN FETCH vp.product
+        LEFT JOIN FETCH vp.batch b
+        LEFT JOIN FETCH b.product
         ORDER BY v.visitDate DESC
     """)
     List<Visit> findAllWithDetails();
