@@ -2,6 +2,7 @@ package org.ved.crm.auth;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,6 +16,7 @@ import org.ved.crm.user.UserRepository;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -22,6 +24,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    @Value("${application.jwt.expiration-ms}")
+    private long expirationMs;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -49,7 +53,7 @@ public class AuthService {
                 .build();
 
         String token = jwtService.generateToken(userDetails);
-        return AuthResponse.of(token, 86400000L);
+        return AuthResponse.of(token, expirationMs);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -76,7 +80,7 @@ public class AuthService {
                 .build();
 
         String token = jwtService.generateToken(userDetails);
-        return AuthResponse.of(token, 86400000L);
+        return AuthResponse.of(token, expirationMs);
     }
 
 }

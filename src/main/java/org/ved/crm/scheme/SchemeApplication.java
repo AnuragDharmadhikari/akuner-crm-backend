@@ -25,7 +25,7 @@ public class SchemeApplication extends BaseAuditEntity {
     private Scheme scheme;
 
     @Enumerated(EnumType.STRING)
-    @JoinColumn(name = "scheme_type",nullable = false)
+    @Column(name = "scheme_type",nullable = false)
     private SchemeType schemeType;
 
     @Column(name = "benefit_description", nullable = false)

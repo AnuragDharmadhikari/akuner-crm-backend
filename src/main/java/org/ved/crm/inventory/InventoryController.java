@@ -22,18 +22,6 @@ public class InventoryController {
         return ResponseEntity.ok(ApiResponse.success("Batches retrieved successfully",inventoryService.getBatchesByProduct(productId)));
     }
 
-    @GetMapping("/batches/{id}")
-    public ResponseEntity<ApiResponse<BatchDto>> getBatchById(@PathVariable UUID id){
-        return ResponseEntity.ok(ApiResponse.success("Batch retrieved successfully",inventoryService.getBatchById(id)));
-    }
-
-    @GetMapping("/batches/{batchId}/movements")
-    public ResponseEntity<ApiResponse<List<StockMovementDto>>> getMovementsByBatch(@PathVariable UUID batchId){
-        return ResponseEntity.ok(
-                ApiResponse.success("Movements retrieved successfully",
-                        inventoryService.getMovementsByBatch(batchId)));
-    }
-
     @GetMapping("/batches/near-expiry")
     public ResponseEntity<ApiResponse<List<BatchDto>>> getNearExpiryBatches() {
         return ResponseEntity.ok(
@@ -46,6 +34,18 @@ public class InventoryController {
         return ResponseEntity.ok(
                 ApiResponse.success("Expired batches retrieved successfully",
                         inventoryService.getExpiredBatchesWithStock()));
+    }
+
+    @GetMapping("/batches/{id}")
+    public ResponseEntity<ApiResponse<BatchDto>> getBatchById(@PathVariable UUID id){
+        return ResponseEntity.ok(ApiResponse.success("Batch retrieved successfully",inventoryService.getBatchById(id)));
+    }
+
+    @GetMapping("/batches/{batchId}/movements")
+    public ResponseEntity<ApiResponse<List<StockMovementDto>>> getMovementsByBatch(@PathVariable UUID batchId){
+        return ResponseEntity.ok(
+                ApiResponse.success("Movements retrieved successfully",
+                        inventoryService.getMovementsByBatch(batchId)));
     }
 
     @PostMapping("/batches")

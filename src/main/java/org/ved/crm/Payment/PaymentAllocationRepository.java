@@ -13,10 +13,10 @@ public interface PaymentAllocationRepository extends JpaRepository<PaymentAlloca
 
     // Get total amount already allocated to a specific invoice
     // Used to check how much is still outstanding on that invoice
-    @Query("""
-            SELECT COALESCE(SUM(pa.allocatedAmount), 0)
-            FROM PaymentAllocation pa
-            WHERE pa.invoice.id = :invoiceId
-            """)
+    @Query(value = """
+        SELECT COALESCE(SUM(allocated_amount), 0)
+        FROM payment_allocations
+        WHERE invoice_id = :invoiceId
+        """, nativeQuery = true)
     BigDecimal getTotalAllocatedForInvoice(@Param("invoiceId") UUID invoiceId);
 }

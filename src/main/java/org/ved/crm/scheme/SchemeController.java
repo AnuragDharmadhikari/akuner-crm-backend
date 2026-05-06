@@ -51,6 +51,17 @@ public class SchemeController {
         );
     }
 
+    @GetMapping("/order/{orderId}/applications")
+    public ResponseEntity<ApiResponse<List<SchemeApplicationDto>>> getApplicationsByOrder(
+            @PathVariable UUID orderId) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Scheme applications retrieved successfully",
+                        schemeService.getApplicationsByOrder(orderId)
+                )
+        );
+    }
+
     // Create a new scheme — owner negotiates deal with buyer,
     // enters it into the system. Auto-applies on next qualifying order.
     @PostMapping

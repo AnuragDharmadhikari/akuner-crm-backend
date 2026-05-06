@@ -12,10 +12,10 @@ import java.util.UUID;
 @Repository
 public interface DoctorRepository extends JpaRepository<Doctor, UUID> {
 
-    @Query("SELECT d FROM Doctor d LEFT JOIN FETCH d.territory WHERE d.territory.id = :territoryId")
+    @Query("SELECT d FROM Doctor d LEFT JOIN FETCH d.territory WHERE d.territory.id = :territoryId AND d.isActive = true")
     List<Doctor> findByTerritoryId(@Param("territoryId") UUID territoryId);
 
-    @Query("SELECT d FROM Doctor d LEFT JOIN FETCH d.territory WHERE d.specialty = :specialty")
+    @Query("SELECT d FROM Doctor d LEFT JOIN FETCH d.territory WHERE d.specialty = :specialty AND d.isActive = true")
     List<Doctor> findBySpecialty(@Param("specialty") String specialty);
 
     @Query("SELECT d FROM Doctor d LEFT JOIN FETCH d.territory WHERE d.isActive = true")

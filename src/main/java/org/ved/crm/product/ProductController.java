@@ -22,7 +22,7 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully",productService.getAllActiveProducts()));
     }
 
-    @GetMapping("{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductDto>> getProductById(@PathVariable UUID id){
         return ResponseEntity.ok(ApiResponse.success("Product retrieved successfully",productService.getProductById(id)));
     }
@@ -46,7 +46,8 @@ public class ProductController {
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<ApiResponse<Void>> deactivateProduct(@PathVariable UUID id){
-        return ResponseEntity.ok(ApiResponse.success("Product Deactivated Successfully"));
+        productService.deactivateProduct(id);
+        return ResponseEntity.ok(ApiResponse.success("Product deactivated successfully"));
     }
 
 }

@@ -2,7 +2,6 @@ package org.ved.crm.scheme;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.cglib.core.Local;
 import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.audit.BaseAuditEntity;
 import org.ved.crm.product.Product;

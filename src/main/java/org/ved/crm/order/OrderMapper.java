@@ -44,6 +44,8 @@ public class OrderMapper {
                 item.getQuantity(),
                 item.getUnitPrice(),
                 item.getDiscountPct(),
+                item.getSchemeDiscountPct(),
+                item.getFreeQuantity(),
                 item.getLineTotal()
         );
     }

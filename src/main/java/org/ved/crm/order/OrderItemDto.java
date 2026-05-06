@@ -11,6 +11,7 @@ public record OrderItemDto(
         Integer quantity,
         BigDecimal unitPrice,
         BigDecimal discountPct,
+        BigDecimal schemeDiscountPct,  // ← add
+        Integer freeQuantity,           // ← add
         BigDecimal lineTotal
-) {
-}
+) {}

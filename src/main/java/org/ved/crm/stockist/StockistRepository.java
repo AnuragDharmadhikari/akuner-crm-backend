@@ -12,7 +12,7 @@ import java.util.UUID;
 @Repository
 public interface StockistRepository extends JpaRepository<Stockist, UUID> {
 
-    @Query("SELECT s FROM Stockist s JOIN FETCH s.assignedRep WHERE s.assignedRep.id = :repId")
+    @Query("SELECT s FROM Stockist s JOIN FETCH s.assignedRep WHERE s.assignedRep.id = :repId AND s.isActive = true")
     List<Stockist> findByAssignedRepId(@Param("repId") UUID repId);
 
     @Query("SELECT s FROM Stockist s JOIN FETCH s.assignedRep WHERE s.isActive = true")

@@ -155,15 +155,10 @@ public class VisitService {
                     buildVisitProducts(request.products(), visit);
             visit.getVisitProducts().addAll(newProducts);
 
-            for (VisitProduct vp : newProducts) {
-                if (vp.getSamplesGiven() != null && vp.getSamplesGiven() > 0) {
-                    inventoryService.deductStockForSample(
-                            vp.getBatch().getId(),
-                            vp.getSamplesGiven(),
-                            visit.getId()
-                    );
-                }
-            }
+            // NOTE: Sample stock deduction is intentionally NOT performed on update.
+            // Samples were already deducted on createVisit.
+            // Allowing re-deduction on update would cause double stock reduction.
+            // If the rep gave additional samples on a follow-up, log a new visit.
         }
 
         Visit saved = visitRepository.save(visit);

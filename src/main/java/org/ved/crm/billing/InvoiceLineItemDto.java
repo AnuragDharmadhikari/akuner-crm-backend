@@ -15,6 +15,6 @@ public record InvoiceLineItemDto(
         BigDecimal cgstAmt,
         BigDecimal sgstAmt,
         BigDecimal igstAmt,
-        BigDecimal inlineTotal
-) {
-}
+        Integer freeQuantity,
+        BigDecimal lineTotal
+) {}

@@ -111,9 +111,14 @@ public class InvoiceService {
                     .multiply(BigDecimal.valueOf(orderItem.getQuantity()))
                     .setScale(2, RoundingMode.HALF_UP);
 
-            // Discount in rupees
+            // Total effective discount = base discount + scheme discount.
+            // schemeDiscountPct defaults to ZERO when no scheme applied — always safe.
+            // PERCENTAGE_DISCOUNT schemes stack on top of base discount.
+            BigDecimal totalDiscountPct = orderItem.getDiscountPct()
+                    .add(orderItem.getSchemeDiscountPct());
+
             BigDecimal discountAmount = grossAmount
-                    .multiply(orderItem.getDiscountPct())
+                    .multiply(totalDiscountPct)
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
             // Taxable amount — GST calculated on this
@@ -155,7 +160,7 @@ public class InvoiceService {
                     .hsnCode(orderItem.getProduct().getHsnCode())
                     .quantity(orderItem.getQuantity())
                     .unitPrice(orderItem.getUnitPrice())
-                    .discountPct(orderItem.getDiscountPct())
+                    .discountPct(totalDiscountPct)
                     .taxableAmount(taxableAmount)
                     .cgstAmt(cgstAmt)
                     .sgstAmt(sgstAmt)

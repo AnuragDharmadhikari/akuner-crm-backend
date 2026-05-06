@@ -23,7 +23,7 @@ public class TerritoryController {
         return ResponseEntity.ok(ApiResponse.success("Territories retrieved successfully",territories));
     }
 
-    @GetMapping("{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TerritoryDto>> getTerritoryById(@PathVariable UUID id){
         TerritoryDto territory = territoryService.getTerritoryById(id);
         return ResponseEntity.ok(ApiResponse.success("Territory retrieved successfully",territory));

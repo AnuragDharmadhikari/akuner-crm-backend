@@ -88,16 +88,4 @@ public class CallTargetService {
         return callTargetMapper.toDto(callTargetRepository.findByIdWithDetails(id).orElseThrow());
     }
 
-    // INCREMENT actualVisits — called internally when a visit is marked COMPLETED
-    // This will be wired to VisitService in Phase 3
-    @Transactional
-    public void incrementActualVisits(UUID repId, Integer month, Integer year) {
-        callTargetRepository.findByRepIdAndMonthAndYear(repId, month, year)
-                .ifPresent(target -> {
-                    target.setActualVisits(target.getActualVisits() + 1);
-                    callTargetRepository.save(target);
-                });
-        // If no target exists for this period — silently do nothing
-        // Not every month has a target assigned
-    }
 }

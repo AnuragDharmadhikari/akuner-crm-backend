@@ -80,6 +80,12 @@ public class DoctorService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Doctor", "id", id));
 
+        if (!doctor.isActive() && (request.isActive() == null || !request.isActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot update a deactivated doctor: " + doctor.getFullName()
+                            + ". Set isActive to true to reactivate first.");
+        }
+
         doctor.setFullName(request.fullName());
         doctor.setSpecialty(request.specialty());
         doctor.setHospitalName(request.hospitalName());

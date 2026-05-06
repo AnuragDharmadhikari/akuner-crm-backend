@@ -2,7 +2,6 @@ package org.ved.crm.scheme;
 
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.chemist.Chemist;
@@ -54,6 +53,22 @@ public class SchemeService {
         Scheme scheme = schemeRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Scheme","id",id));
         return schemeMapper.toDto(scheme);
+    }
+
+    public List<SchemeApplicationDto> getApplicationsByOrder(UUID orderId) {
+        return schemeApplicationRepository.findByOrderId(orderId)
+                .stream()
+                .map(sa -> new SchemeApplicationDto(
+                        sa.getId(),
+                        sa.getOrderItem().getId(),
+                        sa.getScheme().getId(),
+                        sa.getSchemeType(),
+                        sa.getBenefitDescription(),
+                        sa.getFreeQuantity(),
+                        sa.getDiscountApplied(),
+                        sa.getCreatedAt()
+                ))
+                .toList();
     }
 
     @Transactional

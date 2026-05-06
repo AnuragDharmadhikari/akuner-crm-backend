@@ -165,6 +165,9 @@ public class OrderService {
         // Clear existing — orphanRemoval deletes from DB
         order.getOrderItems().clear();
 
+        // Note: Schemes are not re-applied on order update.
+        // If scheme pricing is needed, cancel and recreate the order.
+        // This prevents unintended scheme re-application on partial updates.
         List<OrderItem> newItems = buildOrderItems(request.orderItems(), order);
         order.getOrderItems().addAll(newItems);
 

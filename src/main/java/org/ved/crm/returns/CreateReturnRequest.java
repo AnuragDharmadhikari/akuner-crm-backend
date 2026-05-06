@@ -1,6 +1,7 @@
 package org.ved.crm.returns;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -16,7 +17,7 @@ public record CreateReturnRequest(
         @NotNull
         LocalDate returnDate,
 
-        @NotNull
+        @NotBlank
         String reason,
 
         @NotNull

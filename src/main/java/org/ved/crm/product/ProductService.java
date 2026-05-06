@@ -56,7 +56,8 @@ public class ProductService {
                 .build();
 
         Product saved = productRepository.save(product);
-        return productMapper.toDto(saved);
+        return productMapper.toDto(
+                productRepository.findById(saved.getId()).orElseThrow());
 
     }
 
@@ -64,6 +65,12 @@ public class ProductService {
     public ProductDto updateProduct(UUID id,UpdateProductRequest request){
         Product product = productRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("Product","id",id));
+
+        if (!product.isActive() && (request.isActive() == null || !request.isActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot update a discontinued product: " + product.getName()
+                            + ". Set isActive to true to reactivate first.");
+        }
 
         if (request.dealerPrice().compareTo(request.mrp()) > 0) {
             throw new IllegalArgumentException(

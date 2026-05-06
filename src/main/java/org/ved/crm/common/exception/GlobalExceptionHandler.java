@@ -35,10 +35,22 @@ public class GlobalExceptionHandler {
         return ApiResponse.failure(message);
     }
 
+    // IllegalArgumentException — bad input, wrong field value, XOR violations
+    // HTTP 400 BAD REQUEST — client sent invalid data
     @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> handleIllegalArgument(
             IllegalArgumentException ex) {
+        return ApiResponse.failure(ex.getMessage());
+    }
+
+    // IllegalStateException — business rule conflict, duplicate active scheme,
+    // invoice already exists for order, etc.
+    // HTTP 409 CONFLICT — valid data but conflicts with current state
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponse<Void> handleIllegalState(
+            IllegalStateException ex) {
         return ApiResponse.failure(ex.getMessage());
     }
 
@@ -47,13 +59,6 @@ public class GlobalExceptionHandler {
     public ApiResponse<Void> handleBadCredentials(
             BadCredentialsException ex) {
         return ApiResponse.failure(ex.getMessage());
-    }
-
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiResponse<Void> handleGenericException(Exception ex) {
-        ex.printStackTrace(); // temporary — remove after debugging
-        return ApiResponse.failure("An unexpected error occurred");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -71,5 +76,11 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex) {
         return ApiResponse.failure(
                 "Invalid request format. Check enum values and data types.");
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiResponse<Void> handleGenericException(Exception ex) {
+        return ApiResponse.failure("An unexpected error occurred");
     }
 }

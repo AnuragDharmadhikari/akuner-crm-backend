@@ -87,14 +87,16 @@ public class ChemistService {
         Chemist chemist = chemistRepository.findByIdWithDetails(id)
                 .orElseThrow(()->new ResourceNotFoundException("Chemist","id",id));
 
-        if (!chemist.isActive()) {
+        if (!chemist.isActive() &&
+                (request.isActive() == null || !request.isActive())) {
             throw new IllegalArgumentException(
                     "Cannot update a deactivated chemist: "
-                            + chemist.getFirmName());
+                            + chemist.getFirmName()
+                            + ". Set isActive to true to reactivate first.");
         }
 
         User rep = userRepository.findById(request.assignedRepId())
-                .orElseThrow(()->new ResourceNotFoundException("User","id",request.assignedRepId().toString()));
+                .orElseThrow(()->new ResourceNotFoundException("User","id",request.assignedRepId()));
 
         if (!rep.isActive()) {
             throw new IllegalArgumentException(
@@ -139,7 +141,7 @@ public class ChemistService {
     @Transactional
     public void deactivateChemist(UUID id) {
         Chemist chemist = chemistRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Chemist", "id", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException("Chemist", "id", id));
         chemist.setActive(false);
         chemistRepository.save(chemist);
     }

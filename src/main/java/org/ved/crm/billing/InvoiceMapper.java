@@ -54,6 +54,7 @@ public class InvoiceMapper {
                 item.getCgstAmt(),
                 item.getSgstAmt(),
                 item.getIgstAmt(),
+                item.getFreeQuantity(),
                 item.getLineTotal()
         );
     }
