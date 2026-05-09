@@ -21,6 +21,27 @@ spring:
     compose:
       lifecycle-management: start-and-stop
 
+  # ── Redis Connection ──────────────────────────────────────────────────────────
+  # Spring Boot auto-connects to Redis using these coordinates
+  # Host is localhost because Docker Compose exposes Redis on host port 6379
+  # This is the same Redis instance already used by LoginRateLimiter in Phase 3
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # ── Cache Configuration ───────────────────────────────────────────────────────
+  # Tells Spring to use Redis as the cache provider
+  # Without this, @Cacheable defaults to ConcurrentHashMap (in-memory, not shared)
+  cache:
+    type: redis
+    redis:
+      # Default TTL for ALL cache entries — 1 hour in milliseconds
+      # Individual caches can override this but we use 1h for all analytics
+      # After 1 hour Redis automatically evicts the entry
+      # Next request recomputes from DB and caches fresh result
+      time-to-live: 3600000
+
 server:
   port: 8080
 
@@ -33,3 +54,7 @@ application:
 vedpharm:
   company:
     state: Maharashtra
+
+logging:
+  level:
+    org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport: ERROR

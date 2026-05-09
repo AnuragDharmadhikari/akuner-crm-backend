@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.ved.crm.analytics.CreditNoteProjections;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -71,4 +72,22 @@ public interface CreditNoteRepository extends JpaRepository<CreditNote, UUID> {
     // Sequential credit note number from PostgreSQL SEQUENCE
     @Query(value = "SELECT nextval('credit_note_number_seq')", nativeQuery = true)
     Long getNextSequenceValue();
+
+    @Query(value = """
+        SELECT
+            COALESCE(SUM(cn.amount), 0)
+                                                            AS total_open_value,
+            COUNT(cn.id)
+                                                            AS open_count,
+            COALESCE(SUM(cn.amount) FILTER (
+                WHERE cn.stockist_id IS NOT NULL
+            ), 0)                                           AS stockist_open_value,
+            COALESCE(SUM(cn.amount) FILTER (
+                WHERE cn.chemist_id IS NOT NULL
+            ), 0)                                           AS chemist_open_value
+        FROM credit_notes cn
+        WHERE cn.status = 'OPEN'
+        """, nativeQuery = true)
+    CreditNoteProjections.OpenCreditNoteTotalProjection findOpenCreditNoteTotal();
+
 }

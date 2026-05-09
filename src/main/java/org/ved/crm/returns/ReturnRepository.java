@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.ved.crm.analytics.ReturnProjections;
 
 import java.util.List;
 import java.util.Optional;
@@ -67,4 +68,33 @@ public interface ReturnRepository extends JpaRepository<Return, UUID> {
     // Sequential return number from PostgreSQL SEQUENCE
     @Query(value = "SELECT nextval('return_number_seq')", nativeQuery = true)
     Long getNextSequenceValue();
+
+    // ── ANALYTICS: Returns Summary
+    @Query(value = """
+        SELECT
+            TO_CHAR(r.created_at, 'YYYY-MM')                        AS month,
+            COUNT(r.id)                                              AS total_return_count,
+            COUNT(r.id) FILTER (
+                WHERE r.status = 'PROCESSED'
+            )                                                        AS processed_return_count,
+            COUNT(r.id) FILTER (
+                WHERE r.status = 'REJECTED'
+            )                                                        AS rejected_return_count,
+            COALESCE(SUM(cn.amount) FILTER (
+                WHERE r.status = 'PROCESSED'
+            ), 0)                                                    AS total_return_value,
+            COALESCE(SUM(cn.amount) FILTER (
+                WHERE r.status = 'PROCESSED'
+                  AND cn.chemist_id IS NOT NULL
+            ), 0)                                                    AS chemist_return_value,
+            COALESCE(SUM(cn.amount) FILTER (
+                WHERE r.status = 'PROCESSED'
+                  AND cn.stockist_id IS NOT NULL
+            ), 0)                                                    AS stockist_return_value
+        FROM returns r
+        LEFT JOIN credit_notes cn ON cn.return_id = r.id
+        GROUP BY TO_CHAR(r.created_at, 'YYYY-MM')
+        ORDER BY month ASC
+        """, nativeQuery = true)
+    List<ReturnProjections.ReturnsSummaryProjection> findReturnsSummary();
 }

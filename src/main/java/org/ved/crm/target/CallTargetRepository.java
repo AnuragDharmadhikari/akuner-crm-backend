@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.ved.crm.analytics.CallTargetProjections;
 
 import java.util.List;
 import java.util.Optional;
@@ -68,4 +69,28 @@ public interface CallTargetRepository extends JpaRepository<CallTarget, UUID> {
             @Param("month") int month,
             @Param("year") int year
     );
+
+    // ── ANALYTICS: Target Achievement
+    @Query(value = """
+        SELECT
+            u.id                AS rep_id,
+            u.full_name         AS rep_name,
+            ct.month            AS month,
+            ct.year             AS year,
+            ct.target_visits    AS target_visits,
+            ct.actual_visits    AS actual_visits
+        FROM call_targets ct
+        JOIN users u ON u.id = ct.rep_id
+        WHERE ct.month = :month
+          AND ct.year  = :year
+          AND u.is_active = true
+        ORDER BY
+            CASE
+                WHEN ct.target_visits = 0 THEN NULL
+                ELSE ct.actual_visits::FLOAT / ct.target_visits
+            END DESC NULLS LAST
+        """, nativeQuery = true)
+    List<CallTargetProjections.TargetAchievementProjection> findTargetAchievement(
+            @Param("month") int month,
+            @Param("year") int year);
 }
