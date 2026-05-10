@@ -2,6 +2,9 @@ spring:
   application:
     name: VedPharm CRM
 
+  profiles:
+    active: local
+
   datasource:
     url: jdbc:postgresql://localhost:5432/vedpharm
     username: vedpharm_user
@@ -21,25 +24,14 @@ spring:
     compose:
       lifecycle-management: start-and-stop
 
-  # ── Redis Connection ──────────────────────────────────────────────────────────
-  # Spring Boot auto-connects to Redis using these coordinates
-  # Host is localhost because Docker Compose exposes Redis on host port 6379
-  # This is the same Redis instance already used by LoginRateLimiter in Phase 3
   data:
     redis:
       host: localhost
       port: 6379
 
-  # ── Cache Configuration ───────────────────────────────────────────────────────
-  # Tells Spring to use Redis as the cache provider
-  # Without this, @Cacheable defaults to ConcurrentHashMap (in-memory, not shared)
   cache:
     type: redis
     redis:
-      # Default TTL for ALL cache entries — 1 hour in milliseconds
-      # Individual caches can override this but we use 1h for all analytics
-      # After 1 hour Redis automatically evicts the entry
-      # Next request recomputes from DB and caches fresh result
       time-to-live: 3600000
 
 server:
@@ -55,6 +47,17 @@ vedpharm:
   company:
     state: Maharashtra
 
+# ── OpenAI Configuration ──────────────────────────────────────────────────────
+# api-key lives in application-local.yml which is gitignored — never pushed
+# model: gpt-4o-mini — cheapest, fastest, sufficient for all 6 AI features
+# max-tokens: 1000 — hard cap per call — controls cost
+# timeout-seconds: 30 — AI calls can be slow — don't let them hang forever
+openai:
+  api-key: your-key-goes-in-application-local.yml
+  model: gpt-4o-mini
+  max-tokens: 1000
+  timeout-seconds: 30
+
 logging:
   level:
-    org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport: ERROR
+    org.springframework.data.repository.config.RepositoryConfigurationExtensisupport: ERROR

@@ -121,4 +121,15 @@ public class AnalyticsController {
         ));
     }
 
+    // ── AI Usage Cost Summary ──────────────────────────────────────────────────
+// GET /api/v1/analytics/ai/usage
+// OWNER only
+    @GetMapping("/ai/usage")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getAiUsageSummary() {
+        return ResponseEntity.ok(ApiResponse.success(
+                "AI usage summary retrieved successfully",
+                analyticsService.getAiUsageSummary()
+        ));
+    }
+
 }

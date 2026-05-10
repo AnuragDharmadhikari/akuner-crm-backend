@@ -20,9 +20,6 @@ public class CacheConfig {
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
 
-        // RedisSerializer.json() is the Spring Data Redis 4.0 recommended approach
-        // It creates a properly configured Jackson serializer internally
-        // Handles type metadata correctly without deprecated classes
         RedisSerializer<Object> jsonSerializer = RedisSerializer.json();
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration
@@ -38,19 +35,50 @@ public class CacheConfig {
                 )
                 .disableCachingNullValues();
 
-        Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
-                "analytics::revenue",
-                defaultConfig.entryTtl(Duration.ofHours(1)),
+        // Map.ofEntries used instead of Map.of()
+        // Map.of() has a hard limit of 10 entries
+        // Map.ofEntries has no limit
+        Map<String, RedisCacheConfiguration> cacheConfigurations =
+                Map.ofEntries(
 
-                "analytics::gst",
-                defaultConfig.entryTtl(Duration.ofHours(1)),
+                        // ── Analytics Caches (4) ───────────────────────────────────────
+                        Map.entry("analytics::revenue",
+                                defaultConfig.entryTtl(Duration.ofHours(1))),
 
-                "analytics::outstanding",
-                defaultConfig.entryTtl(Duration.ofMinutes(30)),
+                        Map.entry("analytics::gst",
+                                defaultConfig.entryTtl(Duration.ofHours(1))),
 
-                "analytics::reps",
-                defaultConfig.entryTtl(Duration.ofMinutes(30))
-        );
+                        Map.entry("analytics::outstanding",
+                                defaultConfig.entryTtl(Duration.ofMinutes(30))),
+
+                        Map.entry("analytics::reps",
+                                defaultConfig.entryTtl(Duration.ofMinutes(30))),
+
+                        // ── AI Feature Caches (6) ──────────────────────────────────────
+                        // Doctor engagement score — stable, 24h per doctor
+                        Map.entry("ai::doctor-engagement",
+                                defaultConfig.entryTtl(Duration.ofHours(24))),
+
+                        // Pre-visit briefing — 1h per visit
+                        Map.entry("ai::visit-briefing",
+                                defaultConfig.entryTtl(Duration.ofHours(1))),
+
+                        // Stockist payment risk — 6h per stockist
+                        Map.entry("ai::payment-risk",
+                                defaultConfig.entryTtl(Duration.ofHours(6))),
+
+                        // Chemist payment risk — 6h per chemist
+                        Map.entry("ai::chemist-payment-risk",
+                                defaultConfig.entryTtl(Duration.ofHours(6))),
+
+                        // Territory narrative — 12h per territory
+                        Map.entry("ai::territory-narrative",
+                                defaultConfig.entryTtl(Duration.ofHours(12))),
+
+                        // Order recommendation — 2h per chemist
+                        Map.entry("ai::order-recommendation",
+                                defaultConfig.entryTtl(Duration.ofHours(2)))
+                );
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)

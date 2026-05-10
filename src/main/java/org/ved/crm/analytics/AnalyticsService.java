@@ -5,6 +5,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.ai.AiInteractionRepository;
 import org.ved.crm.billing.InvoiceRepository;
 import org.ved.crm.inventory.BatchRepository;
 import org.ved.crm.order.OrderRepository;
@@ -27,6 +28,7 @@ public class AnalyticsService {
     private final OrderRepository orderRepository;
     private final BatchRepository batchRepository;
     private final CallTargetRepository callTargetRepository;
+    private final AiInteractionRepository aiInteractionRepository;
 
     // ── Revenue Summary
     // Cached in Redis for 1 hour — heavy GROUP BY across invoices table
@@ -315,5 +317,32 @@ public class AnalyticsService {
                 ))
                 .toList();
     }
+
+
+    // ── AI Usage Cost Summary ──────────────────────────────────────────────────
+    // Not cached — Owner needs real-time cost visibility
+    // OWNER only — cost data is sensitive
+    @PreAuthorize("hasRole('OWNER')")
+    public java.util.Map<String, Object> getAiUsageSummary() {
+        // Total cost across all time
+        BigDecimal totalCost = aiInteractionRepository.getTotalCostAllTime();
+
+        // Cost breakdown by feature
+        java.util.Map<String, Long> featureCounts = new java.util.LinkedHashMap<>();
+        for (String feature : new String[]{
+                "DOCTOR_ENGAGEMENT", "VISIT_BRIEFING", "PAYMENT_RISK",
+                "CHEMIST_PAYMENT_RISK", "TERRITORY_NARRATIVE",
+                "ORDER_RECOMMENDATION", "PAYMENT_FOLLOW_UP"}) {
+            featureCounts.put(feature,
+                    aiInteractionRepository.getCallCountByFeature(feature));
+        }
+
+        return java.util.Map.of(
+                "totalCostUsd", totalCost,
+                "featureCallCounts", featureCounts,
+                "currency", "USD"
+        );
+    }
+
 
 }
