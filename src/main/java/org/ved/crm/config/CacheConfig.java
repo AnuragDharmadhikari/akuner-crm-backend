@@ -20,7 +20,7 @@ public class CacheConfig {
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
 
-        RedisSerializer<Object> jsonSerializer = RedisSerializer.json();
+        RedisSerializer<Object> jsonSerializer = RedisSerializer.java();
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration
                 .defaultCacheConfig()

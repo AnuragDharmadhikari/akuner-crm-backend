@@ -1,5 +1,6 @@
 package org.ved.crm.analytics;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 public record RevenueSummaryDto(
@@ -12,5 +13,5 @@ public record RevenueSummaryDto(
 
         BigDecimal averageInvoiceValue
 
-) {
+) implements Serializable {
 }
