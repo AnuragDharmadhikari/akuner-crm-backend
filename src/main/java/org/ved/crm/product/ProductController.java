@@ -22,6 +22,12 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully",productService.getAllActiveProducts()));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<ProductDto>>> getAllProducts() {
+        return ResponseEntity.ok(ApiResponse.success("All products retrieved successfully",
+                productService.getAllProducts()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductDto>> getProductById(@PathVariable UUID id){
         return ResponseEntity.ok(ApiResponse.success("Product retrieved successfully",productService.getProductById(id)));

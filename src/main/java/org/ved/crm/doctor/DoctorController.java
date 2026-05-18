@@ -24,6 +24,12 @@ public class DoctorController {
         return ResponseEntity.ok(ApiResponse.success("Doctors retrieved successfully",doctors));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<DoctorDto>>> getAllDoctors() {
+        List<DoctorDto> doctors = doctorService.getAllDoctors();
+        return ResponseEntity.ok(ApiResponse.success("All doctors retrieved successfully", doctors));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<DoctorDto>> getDoctorById(@PathVariable UUID id){
         DoctorDto doctor = doctorService.getDoctorById(id);

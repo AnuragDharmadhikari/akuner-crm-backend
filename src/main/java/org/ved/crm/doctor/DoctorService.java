@@ -130,4 +130,12 @@ public class DoctorService {
         doctor.setActive(false);
         doctorRepository.save(doctor);
     }
+
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
+    public List<DoctorDto> getAllDoctors() {
+        return doctorRepository.findAllWithTerritory()
+                .stream()
+                .map(doctorMapper::toDto)
+                .toList();
+    }
 }

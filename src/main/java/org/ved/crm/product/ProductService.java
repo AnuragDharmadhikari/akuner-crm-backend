@@ -112,4 +112,11 @@ public class ProductService {
         productRepository.save(product);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
+    public List<ProductDto> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(productMapper::toDto)
+                .toList();
+    }
 }
