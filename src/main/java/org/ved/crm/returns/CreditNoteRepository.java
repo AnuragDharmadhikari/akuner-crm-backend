@@ -25,6 +25,17 @@ public interface CreditNoteRepository extends JpaRepository<CreditNote, UUID> {
             """)
     Optional<CreditNote> findByIdWithDetails(@Param("id") UUID id);
 
+    // Find credit note by return ID — used by getReturnById to populate creditNote field
+    @Query("""
+            SELECT cn FROM CreditNote cn
+            LEFT JOIN FETCH cn.chemist c
+            LEFT JOIN FETCH cn.stockist s
+            JOIN FETCH cn.returnDoc r
+            LEFT JOIN FETCH cn.appliedToInvoice i
+            WHERE cn.returnDoc.id = :returnId
+            """)
+    Optional<CreditNote> findByReturnDocId(@Param("returnId") UUID returnId);
+
     // Get all credit notes
     @Query("""
             SELECT DISTINCT cn FROM CreditNote cn

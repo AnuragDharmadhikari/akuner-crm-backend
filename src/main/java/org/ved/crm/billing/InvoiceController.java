@@ -48,4 +48,13 @@ public class InvoiceController {
         InvoiceDto invoice = invoiceService.updateInvoiceStatus(id, status);
         return ResponseEntity.ok(ApiResponse.success("Invoice status updated successfully", invoice));
     }
+
+    // GET outstanding invoices with remaining balance
+// Used by PaymentNewPage to show accurate remaining amounts per invoice
+    @GetMapping("/outstanding")
+    public ResponseEntity<ApiResponse<List<OutstandingInvoiceDto>>> getOutstandingInvoices() {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Outstanding invoices retrieved",
+                invoiceService.getOutstandingInvoices()));
+    }
 }

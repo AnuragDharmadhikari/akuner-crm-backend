@@ -75,39 +75,41 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 
     // ── ANALYTICS: Outstanding Invoices
     @Query(value = """
-        SELECT
-            i.id                                                        AS invoice_id,
-            i.invoice_number                                            AS invoice_number,
-            COALESCE(s.firm_name, c.firm_name)                          AS billed_to_name,
-            i.grand_total                                               AS grand_total,
-            COALESCE(SUM(DISTINCT pa.allocated_amount), 0)             AS total_paid,
-            COALESCE(SUM(DISTINCT cn.amount) FILTER (
-                WHERE cn.status = 'APPLIED'
-            ), 0)                                                       AS total_credit_applied,
-            i.grand_total
-                - COALESCE(SUM(DISTINCT pa.allocated_amount), 0)
-                - COALESCE(SUM(DISTINCT cn.amount) FILTER (
-                    WHERE cn.status = 'APPLIED'
-                ), 0)                                                   AS outstanding_amount,
-            i.status                                                    AS status,
-            EXTRACT(DAY FROM NOW() - i.created_at)::BIGINT             AS days_since_issued
-        FROM invoices i
-        LEFT JOIN stockists s ON s.id = i.stockist_id
-        LEFT JOIN chemists c  ON c.id = i.chemist_id
-        LEFT JOIN payment_allocations pa ON pa.invoice_id = i.id
-        LEFT JOIN credit_notes cn        ON cn.applied_to_invoice_id = i.id
-        WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID')
-        GROUP BY i.id, i.invoice_number, i.grand_total, i.status,
-                 i.created_at, s.firm_name, c.firm_name
-        HAVING (
-            i.grand_total
+    SELECT
+        i.id                                                        AS invoice_id,
+        i.invoice_number                                            AS invoice_number,
+        COALESCE(s.firm_name, c.firm_name)                          AS billed_to_name,
+        i.grand_total                                               AS grand_total,
+        COALESCE(SUM(DISTINCT pa.allocated_amount), 0)             AS total_paid,
+        COALESCE(SUM(DISTINCT cn.amount) FILTER (
+            WHERE cn.status = 'APPLIED'
+        ), 0)                                                       AS total_credit_applied,
+        i.grand_total
             - COALESCE(SUM(DISTINCT pa.allocated_amount), 0)
             - COALESCE(SUM(DISTINCT cn.amount) FILTER (
                 WHERE cn.status = 'APPLIED'
-            ), 0)
-        ) > 0
-        ORDER BY days_since_issued DESC
-        """, nativeQuery = true)
+            ), 0)                                                   AS outstanding_amount,
+        i.status                                                    AS status,
+        EXTRACT(DAY FROM NOW() - i.created_at)::BIGINT             AS days_since_issued,
+        i.chemist_id                                                AS chemist_id,
+        i.stockist_id                                               AS stockist_id
+    FROM invoices i
+    LEFT JOIN stockists s ON s.id = i.stockist_id
+    LEFT JOIN chemists c  ON c.id = i.chemist_id
+    LEFT JOIN payment_allocations pa ON pa.invoice_id = i.id
+    LEFT JOIN credit_notes cn        ON cn.applied_to_invoice_id = i.id
+    WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID')
+    GROUP BY i.id, i.invoice_number, i.grand_total, i.status,
+             i.created_at, s.firm_name, c.firm_name, i.chemist_id, i.stockist_id
+    HAVING (
+        i.grand_total
+        - COALESCE(SUM(DISTINCT pa.allocated_amount), 0)
+        - COALESCE(SUM(DISTINCT cn.amount) FILTER (
+            WHERE cn.status = 'APPLIED'
+        ), 0)
+    ) > 0
+    ORDER BY days_since_issued DESC
+    """, nativeQuery = true)
     List<InvoiceProjections.OutstandingInvoiceProjection> findOutstandingInvoices();
 
     // ── ANALYTICS: Top Stockists by Revenue

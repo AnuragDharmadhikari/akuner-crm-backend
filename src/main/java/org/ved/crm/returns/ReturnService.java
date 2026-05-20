@@ -61,8 +61,11 @@ public class ReturnService {
         Return returnDoc = returnRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Return", "id", id));
-        // No credit note context in single fetch — pass null
-        return returnMapper.toDto(returnDoc, null);
+        // Load credit note if this return was processed
+        CreditNote creditNote = creditNoteRepository
+                .findByReturnDocId(returnDoc.getId())
+                .orElse(null);
+        return returnMapper.toDto(returnDoc, creditNote);
     }
 
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")

@@ -238,6 +238,24 @@ public class InvoiceService {
         );
     }
 
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
+    public List<OutstandingInvoiceDto> getOutstandingInvoices() {
+        return invoiceRepository.findOutstandingInvoices()
+                .stream()
+                .map(p -> new OutstandingInvoiceDto(
+                        p.getInvoiceId(),
+                        p.getInvoiceNumber(),
+                        p.getBilledToName(),
+                        p.getGrandTotal(),
+                        p.getTotalPaid(),
+                        p.getOutstandingAmount(),
+                        p.getStatus(),
+                        p.getChemistId(),
+                        p.getStockistId()
+                ))
+                .toList();
+    }
+
     private String generateInvoiceNumber() {
         Long nextVal = invoiceRepository.getNextSequenceValue();
         return String.format("VED-%d-%06d", LocalDate.now().getYear(), nextVal);

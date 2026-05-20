@@ -30,6 +30,8 @@ public class InvoiceProjections {
         BigDecimal getOutstandingAmount();
         String getStatus();
         Long getDaysSinceIssued();
+        UUID getChemistId();
+        UUID getStockistId();
     }
 
     public interface TopStockistProjection{
