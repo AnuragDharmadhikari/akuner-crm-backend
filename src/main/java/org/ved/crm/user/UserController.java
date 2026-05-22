@@ -71,4 +71,12 @@ public class UserController {
         return ResponseEntity.ok(
                 ApiResponse.success("User deactivated successfully"));
     }
+
+    @PatchMapping("/{id}/reactivate")
+    public ResponseEntity<ApiResponse<Void>> reactivateUser(
+            @PathVariable UUID id) {
+        userService.reactivateUser(id);
+        return ResponseEntity.ok(
+                ApiResponse.success("User reactivated successfully"));
+    }
 }

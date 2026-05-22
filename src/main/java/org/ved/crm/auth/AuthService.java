@@ -1,6 +1,5 @@
 package org.ved.crm.auth;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,7 +57,9 @@ public class AuthService {
                 .roles(user.getRole().name())
                 .build();
 
-        String token = jwtService.generateToken(userDetails);
+        // Pass userId and role — embedded into JWT claims
+        // AuditAspect reads userId from token, no DB lookup needed
+        String token = jwtService.generateToken(userDetails, user.getId(), user.getRole().name());
         return AuthResponse.of(token, expirationMs);
     }
 
@@ -97,7 +98,9 @@ public class AuthService {
                     .roles(user.getRole().name())
                     .build();
 
-            String token = jwtService.generateToken(userDetails);
+            // Pass userId and role — embedded into JWT claims
+            // AuditAspect reads userId from token, no DB lookup needed
+            String token = jwtService.generateToken(userDetails, user.getId(), user.getRole().name());
             return AuthResponse.of(token, expirationMs);
 
         } catch (BadCredentialsException ex) {
@@ -109,5 +112,4 @@ public class AuthService {
             throw ex;
         }
     }
-
 }

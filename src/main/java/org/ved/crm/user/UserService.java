@@ -111,4 +111,14 @@ public class UserService {
         user.setActive(false);
         userRepository.save(user);
     }
+
+    @Audited(action = "USER_REACTIVATED", entityType = "User")
+    @PreAuthorize("hasRole('OWNER')")
+    @Transactional
+    public void reactivateUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+        user.setActive(true);
+        userRepository.save(user);
+    }
 }

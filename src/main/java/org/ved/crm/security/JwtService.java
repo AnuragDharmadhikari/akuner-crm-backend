@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -25,32 +26,47 @@ public class JwtService {
     @Value("${application.jwt.expiration-ms}")
     private long expirationMs;
 
-    public String generateToken(UserDetails userDetails){
-        return generateToken(new HashMap<>(),userDetails);
+    public String generateToken(UserDetails userDetails) {
+        return generateToken(new HashMap<>(), userDetails);
     }
 
-    public String generateToken(Map<String,Object> extraClaims,UserDetails userDetails){
+    // New overload — embeds userId and role into JWT claims
+    // Called from AuthService on login/register so every token
+    // carries the user's UUID and role — no DB lookup needed later
+    public String generateToken(UserDetails userDetails, UUID userId, String role) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", userId.toString());
+        extraClaims.put("role", role);
+        return generateToken(extraClaims, userDetails);
+    }
 
+    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis()+expirationMs))
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails){
+    public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername())
                 && !isTokenExpired(token);
     }
 
-    public String extractUsername(String token){
+    public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    private boolean isTokenExpired(String token){
+    // Extracts a claim by key name — used to read userId and role
+    // from the JWT without a database call
+    public String extractClaimByKey(String token, String claimKey) {
+        return extractAllClaims(token).get(claimKey, String.class);
+    }
+
+    private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
