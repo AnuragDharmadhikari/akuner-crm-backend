@@ -1,5 +1,6 @@
 package org.ved.crm.auth;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,6 +31,11 @@ public class AuthService {
     @Value("${application.jwt.expiration-ms}")
     private long expirationMs;
 
+    // Stores the last generated token so AuthController can set it as a cookie
+    // This is thread-safe because each request gets its own Spring bean call stack
+    @Getter
+    private String lastGeneratedToken;
+
     @Audited(action = "USER_REGISTERED", entityType = "User")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
@@ -57,16 +63,13 @@ public class AuthService {
                 .roles(user.getRole().name())
                 .build();
 
-        // Pass userId and role — embedded into JWT claims
-        // AuditAspect reads userId from token, no DB lookup needed
-        String token = jwtService.generateToken(userDetails, user.getId(), user.getRole().name());
-        return AuthResponse.of(token, expirationMs);
+        lastGeneratedToken = jwtService.generateToken(userDetails, user.getId(), user.getRole().name());
+        return AuthResponse.of(user.getEmail(), user.getRole().name(), user.getFullName());
     }
 
     public AuthResponse login(LoginRequest request) {
 
         // Step 1 — Check rate limit BEFORE attempting authentication
-        // Throws TooManyRequestsException if limit exceeded
         loginRateLimiter.checkRateLimit(request.email());
 
         try {
@@ -98,16 +101,11 @@ public class AuthService {
                     .roles(user.getRole().name())
                     .build();
 
-            // Pass userId and role — embedded into JWT claims
-            // AuditAspect reads userId from token, no DB lookup needed
-            String token = jwtService.generateToken(userDetails, user.getId(), user.getRole().name());
-            return AuthResponse.of(token, expirationMs);
+            // Store token so controller can set it as httpOnly cookie
+            lastGeneratedToken = jwtService.generateToken(userDetails, user.getId(), user.getRole().name());
+            return AuthResponse.of(user.getEmail(), user.getRole().name(), user.getFullName());
 
         } catch (BadCredentialsException ex) {
-
-            // Step 6 — Failed authentication — record the attempt
-            // Only record for BadCredentialsException — wrong password
-            // Don't record for TooManyRequestsException — already rate limited
             loginRateLimiter.recordFailedAttempt(request.email());
             throw ex;
         }

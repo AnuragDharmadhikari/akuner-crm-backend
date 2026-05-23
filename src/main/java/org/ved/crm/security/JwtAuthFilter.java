@@ -4,10 +4,12 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,25 +33,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
+        // Read JWT from httpOnly cookie instead of Authorization header
+        String jwt = extractJwtFromCookie(request);
 
-        // No token present — let the request through unauthenticated.
-        // Spring Security will block it at the authorization layer if the
-        // endpoint requires authentication. This is correct behaviour for
-        // public endpoints like /auth/login.
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Also support Authorization header for backward compatibility
+        // and for Prometheus/Actuator internal calls
+        if (jwt == null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+            }
+        }
+
+        if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String jwt = authHeader.substring(7);
-
         try {
-            // extractUsername calls jwtService.extractAllClaims() internally.
-            // If the token is expired, JJWT throws ExpiredJwtException here —
-            // before we even reach isTokenValid(). That's why the old code
-            // was crashing and returning 500: the exception was unhandled and
-            // bubbled all the way up to Tomcat.
             final String userEmail = jwtService.extractUsername(jwt);
 
             if (userEmail != null &&
@@ -72,30 +73,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
 
-            // Token was valid — continue the filter chain normally.
             filterChain.doFilter(request, response);
 
         } catch (ExpiredJwtException e) {
-            // Token is syntactically valid JWT but the expiry time has passed.
-            // We short-circuit here — do NOT call filterChain.doFilter().
-            // Writing directly to the response bypasses Spring MVC entirely,
-            // so this returns immediately as a clean 401 JSON response.
-            // The Axios interceptor on the frontend will catch this 401
-            // and redirect the user to /login.
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.getWriter().write(
-                    "{\"status\":401,\"message\":\"Token expired. Please log in again.\"}"
-            );
-
+                    "{\"success\":false,\"message\":\"Token expired. Please login again.\"}");
         } catch (JwtException e) {
-            // Covers malformed tokens, invalid signatures, unsupported JWT, etc.
-            // Same pattern — short-circuit with a 401.
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.getWriter().write(
-                    "{\"status\":401,\"message\":\"Invalid token.\"}"
-            );
+                    "{\"success\":false,\"message\":\"Invalid token.\"}");
         }
+    }
+
+    // Extract JWT from the httpOnly cookie named "vedpharm_jwt"
+    private String extractJwtFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+        for (Cookie cookie : cookies) {
+            if ("vedpharm_jwt".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }
