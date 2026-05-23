@@ -3,7 +3,7 @@ services:
   # ── PostgreSQL Database ───────────────────────────────────────
   db:
     image: postgres:17-alpine
-    container_name: vedpharm_db
+    container_name: vedpharm_db_prod
     environment:
       POSTGRES_DB: vedpharm
       POSTGRES_USER: ${DB_USERNAME}
@@ -22,7 +22,7 @@ services:
   # ── Redis Cache ───────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: vedpharm_cache
+    container_name: vedpharm_cache_prod
     restart: unless-stopped
     networks:
       - vedpharm_network
@@ -32,7 +32,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vedpharm_app
+    container_name: vedpharm_app_prod
     environment:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -42,6 +42,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
     depends_on:
       db:
         condition: service_healthy
@@ -54,9 +55,9 @@ services:
   # ── React Frontend ────────────────────────────────────────────
   frontend:
     build:
-      context: ../vedpharm-frontend
+      context: C:\Users\dharm\Desktop\JavaSpringBoot\MyPortfolioProject\vedpharm-frontend
       dockerfile: Dockerfile
-    container_name: vedpharm_frontend
+    container_name: vedpharm_frontend_prod
     ports:
       - "80:80"
     depends_on:
@@ -68,7 +69,7 @@ services:
   # ── Prometheus ────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest
-    container_name: vedpharm_prometheus
+    container_name: vedpharm_prometheus_prod
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -80,7 +81,7 @@ services:
   # ── Grafana ───────────────────────────────────────────────────
   grafana:
     image: grafana/grafana:latest
-    container_name: vedpharm_grafana
+    container_name: vedpharm_grafana_prod
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
     volumes:
