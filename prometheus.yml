@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ── VedPharm Spring Boot Backend ─────────────────────────────
+  # Scrapes /actuator/prometheus every 15 seconds
+  # Micrometer registry-prometheus exposes metrics in Prometheus format
+  # 'app' is the Docker service name — resolves via vedpharm_network
+  - job_name: 'vedpharm-backend'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['app:8080']
