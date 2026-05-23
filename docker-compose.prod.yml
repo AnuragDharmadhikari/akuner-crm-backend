@@ -1,0 +1,56 @@
+services:
+
+  # ── PostgreSQL Database ───────────────────────────────────────
+  db:
+    image: postgres:17-alpine
+    container_name: vedpharm_db_prod
+    environment:
+      POSTGRES_DB: vedpharm
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d vedpharm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Redis Cache ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: vedpharm_cache_prod
+    restart: unless-stopped
+
+  # ── Spring Boot Application ───────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vedpharm_app_prod
+    ports:
+      - "8080:8080"
+    environment:
+      # Database — read from .env file, never hardcoded
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/vedpharm
+
+      # JWT — read from .env file
+      JWT_SECRET: ${JWT_SECRET}
+
+      # OpenAI — read from .env file
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+      # Spring profile — production uses different settings
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
