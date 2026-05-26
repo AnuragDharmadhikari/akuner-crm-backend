@@ -1,4 +1,4 @@
-# .github/workflows/ci.yml
+# .github/workflows/pipeline.yml
 # Full CI/CD pipeline for VedPharm backend
 #
 # Triggers:
