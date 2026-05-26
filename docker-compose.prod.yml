@@ -1,6 +1,11 @@
+# docker-compose.prod.yml
+# Production stack — runs on the VPS
+# Images are pre-built by GitHub Actions and stored on Docker Hub
+# The VPS only pulls and runs — it never builds from source
+
 services:
 
-  # ── PostgreSQL Database ───────────────────────────────────────
+  # ── PostgreSQL ──────────────────────────────────────────────
   db:
     image: postgres:17-alpine
     container_name: vedpharm_db_prod
@@ -19,7 +24,7 @@ services:
     networks:
       - vedpharm_network
 
-  # ── Redis Cache ───────────────────────────────────────────────
+  # ── Redis ───────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: vedpharm_cache_prod
@@ -27,11 +32,10 @@ services:
     networks:
       - vedpharm_network
 
-  # ── Spring Boot Backend ───────────────────────────────────────
+  # ── Spring Boot Backend ─────────────────────────────────────
+  # image: pulls from Docker Hub — no building on the VPS
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/vedpharm-backend:latest
     container_name: vedpharm_app_prod
     environment:
       DB_USERNAME: ${DB_USERNAME}
@@ -52,33 +56,51 @@ services:
     networks:
       - vedpharm_network
 
-  # ── React Frontend ────────────────────────────────────────────
+  # ── React Frontend ──────────────────────────────────────────
+  # No ports exposed here — Caddy handles all incoming traffic
   frontend:
-    build:
-      context: C:\Users\dharm\Desktop\JavaSpringBoot\MyPortfolioProject\vedpharm-frontend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/vedpharm-frontend:latest
     container_name: vedpharm_frontend_prod
-    ports:
-      - "80:80"
     depends_on:
       - app
     restart: unless-stopped
     networks:
       - vedpharm_network
 
-  # ── Prometheus ────────────────────────────────────────────────
+  # ── Caddy — HTTPS Reverse Proxy ─────────────────────────────
+  # Caddy sits in front of everything
+  # It owns ports 80 and 443
+  # It auto-provisions SSL certificates from Let's Encrypt
+  # It proxies all traffic to the frontend container
+  caddy:
+    image: caddy:2-alpine
+    container_name: vedpharm_caddy_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+    networks:
+      - vedpharm_network
+
+  # ── Prometheus ──────────────────────────────────────────────
+  # No public port — only accessible within the Docker network
   prometheus:
     image: prom/prometheus:latest
     container_name: vedpharm_prometheus_prod
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
     restart: unless-stopped
     networks:
       - vedpharm_network
 
-  # ── Grafana ───────────────────────────────────────────────────
+  # ── Grafana ─────────────────────────────────────────────────
+  # No public port — only accessible via SSH tunnel if needed
   grafana:
     image: grafana/grafana:latest
     container_name: vedpharm_grafana_prod
@@ -86,10 +108,6 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
     restart: unless-stopped
     networks:
       - vedpharm_network
@@ -101,3 +119,5 @@ networks:
 volumes:
   postgres_data:
   grafana_data:
+  caddy_data:
+  caddy_config:

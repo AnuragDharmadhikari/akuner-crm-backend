@@ -1,7 +1,16 @@
-# ── VedPharm CI Pipeline ──────────────────────────────────────
-# Runs on every push to master and every pull request to master
-# Builds the application and runs all tests
-name: CI
+# .github/workflows/ci.yml
+# Full CI/CD pipeline for VedPharm backend
+#
+# Triggers:
+#   - Every push to master
+#   - Every pull request targeting master
+#
+# Jobs:
+#   1. build-and-test  → always runs (push + PR)
+#   2. build-and-push  → only on push to master
+#   3. deploy          → only on push to master, after image is pushed
+
+name: CI/CD Pipeline
 
 on:
   push:
@@ -10,13 +19,15 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+
+  # ── Job 1: Build & Test ──────────────────────────────────────
+  # Spins up real PostgreSQL and Redis containers as sidecars
+  # Runs all Maven tests against them
+  # This job runs on every push AND every pull request
+  build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
 
-    # ── Service Containers ────────────────────────────────────
-    # GitHub Actions spins up these containers alongside the job
-    # They're available at localhost just like your local Docker setup
     services:
       postgres:
         image: postgres:17-alpine
@@ -38,14 +49,9 @@ jobs:
           - 6379:6379
 
     steps:
-
-      # Step 1 — Check out the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2 — Set up Java 21
-      # We use Java 21 LTS for CI — Java 25 is not yet available
-      # on GitHub Actions runners as a stable release
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -53,11 +59,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # Step 3 — Build and test
-      # Spring Boot reads SPRING_* env vars directly — they override application.yml
-      # SPRING_DATASOURCE_URL overrides spring.datasource.url
-      # SPRING_DATASOURCE_USERNAME overrides spring.datasource.username
-      # This is Spring's relaxed binding for environment variables
       - name: Build with Maven
         env:
           DB_USERNAME: vedpharm_user
@@ -72,12 +73,83 @@ jobs:
           SPRING_FLYWAY_ENABLED: true
         run: mvn clean verify -B
 
-      # Step 4 — Upload test reports if tests fail
-      # This lets you download and read the Surefire XML reports
-      # directly from the GitHub Actions UI
-      - name: Upload test results
+      - name: Upload test results on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: target/surefire-reports/
+
+  # ── Job 2: Build Docker Image & Push to Docker Hub ───────────
+  # Only runs on direct push to master — not on pull requests
+  # Only runs if Job 1 passed
+  #
+  # What happens here:
+  #   - Docker Buildx builds the backend image using our Dockerfile
+  #   - Pushes two tags to Docker Hub:
+  #       :latest      → always points to the most recent build
+  #       :commit-sha  → permanent tag for this exact commit (for rollback)
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Docker Buildx is the modern build engine
+      # It supports layer caching between CI runs which speeds up builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Log in to Docker Hub using the secrets we added in Step 2
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and push the image
+      # cache-from/cache-to: reuses build layers from previous CI runs
+      # This makes subsequent builds much faster
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/vedpharm-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/vedpharm-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── Job 3: Deploy to VPS ─────────────────────────────────────
+  # Only runs after Job 2 successfully pushed the image
+  # SSHs into the VPS and runs three commands:
+  #   1. docker compose pull  → downloads the new :latest image
+  #   2. docker compose up -d → restarts containers with new image
+  #   3. docker image prune   → removes old unused images to free disk
+  #
+  # NOTE: VPS_HOST, VPS_USER, VPS_SSH_KEY secrets don't exist yet
+  # This job will be skipped until we add them in Step 6 (VPS setup)
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/vedpharm
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f
