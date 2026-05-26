@@ -2,6 +2,6 @@
 # Replace the domain below with your actual domain after you buy it
 # For now we use a placeholder — we'll update this in Step 7
 
-vedpharm.yourdomain.com {
+akuner.in, www.akuner.in {
     reverse_proxy frontend:80
 }
