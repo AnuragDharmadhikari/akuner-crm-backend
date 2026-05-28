@@ -67,6 +67,10 @@ application:
     secret: ${JWT_SECRET:your-secret-key-goes-in-application-local.yml}
     expiration-ms: 900000
     refresh-expiration-ms: 604800000
+  owner:
+    email: ${OWNER_EMAIL:owner@akuner.in}
+    password: ${OWNER_PASSWORD:changeme123}
+    full-name: ${OWNER_FULL_NAME:Akuner Owner}
 
 vedpharm:
   company:
