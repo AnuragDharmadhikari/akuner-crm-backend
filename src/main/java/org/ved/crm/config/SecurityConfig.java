@@ -55,6 +55,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/logout",
                                 "/actuator/health",
+                                "/api/v1/auth/refresh",
                                 "/actuator/info",
                                 "/actuator/prometheus"
                         )
@@ -62,6 +63,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/logout").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .anyRequest().authenticated()
                 )
