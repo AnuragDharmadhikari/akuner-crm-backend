@@ -2,6 +2,7 @@ package org.ved.crm.billing;
 
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.*;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,7 +47,51 @@ public class InvoicePdfService {
                     "The drugs supplied under this invoice do not contravene in any way " +
                     "the provision of section 18 of the Drugs & Cosmetics Act, 1940. " +
                     "Subject to Nanded Jurisdiction.";
-
+    private static final String LOGO_BASE64 =
+            "iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAAABmJLR0QA/wD/AP+gvaeTAAAJ20lEQVR4" +
+                    "nO3dXWxT5x3H8e9xnMQvCZAXCpRAWQgZkGrA1m4D1qnapNJ260rZuorugotOXFTtkLohWHcx2KYOtBd1" +
+                    "EtOqcdXejaKVrZUQoGmUqRRt4mIwkxIcXkvTBaK8EB/bie2zi/ggktnn+OW8PM/j/C6tc57z2B//Hz/n" +
+                    "sX2ORo2kp6enYXh4+DDQ0NDQsPnq1aspv/vkRTS/O+BF7sF9Kv/QsVpBVh64AK6ZmkBWGtgC14zyyMoC" +
+                    "l4BrRmlkJYHLwDWjLLJywF1dXY3JZPIdwzCeKGc/TdOOhsPhZ+LxeNqtvvmRgN8dcDI9PT0Nuq6/XS4u" +
+                    "gGEYT+i6/pdly5aF3OibX1GmgkupXE3TjsIUptU2KlWyEhVcYuUeq6+v3zJv3rzNwLvFNlKtkqWv4BIn" +
+                    "VNMmUZXsI2ukBq4GqlaQpQV2AqgWkKUEdhJGdWTpJlnVgPxj6YY9HyzdsO/ex2Kx2ERLS8t3sJh4AZsm" +
+                    "JiaOyDjxkqqCq8XV4KcAGuzfeP30bqfaFjnSADuFa6ZWkKUAdhrXTC0gCw/sFq4Z1ZGFBnYb14zKyMIC" +
+                    "e4VrRlVkIYG9xjWjIrJwwH7hmlENWShgv3HNqIQsDLAouGZUQRYCWDRcMyog+w4sKq4Z2ZF9BRYd14zM" +
+                    "yL4By4JrRlZkX4BlwzUjI7LnwLLimpEN2VNg2XHNyITsGbAquGZkQfYEWDVcMzIguw6sKq4Z0ZFdBVYd" +
+                    "14zIyK4B1wquGVGRXQGuNVwzIiI7DlyruGZEQ3YUuNZxzYiE7BjwLO70iILsCPAsbuGIgFw18CyudfxG" +
+                    "rgp4Fre0+IlcMbCcuAHq7u9mzle+wNyHVxFdvoRQx3yCzRHqQkE0I0tuYoJcMkl2bIzJW7dIX7+BfiHG" +
+                    "2N9PM9p/B6PCI/uFXBGwdLjBeTR9cwuLtj5J2xcXUheo4GnnEiQO/pjzvzxLtkJlP5DL/n+wXLghwo9v" +
+                    "Z9WJt1nz+gvc9+VFleECBCI0tocwKi1hwIBdXv8/uSxgmXC19nV0HHyTtW9so7Uz4sB0MoMeu0yuyla8" +
+                    "Ri75acuDqxH8/FZW/H47rffXF97ESJH+1ylunzjL+NVhjIXr6dj5NE1zLN7vuUEGnn+Wyx9mHOqlN8N1" +
+                    "ScDy4AZo+NoOVh/4NtFooadmkO07wbWfHODTfw7dM2GqZ+7P/kTPtgXFX5D0GeLrf8R/h6oYo2fEC2Tb" +
+                    "IVoq3E27ePCNIrjGJKmjv+b85r0MTMOditZYb/luN25eIjHqHC54M1xbAsuDqxHc8CKrX/8G4cZCuBlS" +
+                    "f32N2EtHSCQK7F63iKaVcyzaN8j19pF0ZnSe0bK7yEWB5cEF7TNP0X3gOaKRQjWYI3PmD/TuPE6qGFBo" +
+                    "OdGuOosjZEleqH6CVSxuIhcElgmX0Gfp+N0OWtqKvFfvnOXazkPoFpcW1Tq7iYQsBuhcAj32ScWLHKXE" +
+                    "LeT/e1WkwiVE8w9epeNzxd7AOVKH32TwhlXtaQRXrSBkWcCXGb/owvg8I24gTwOWCxe0ld+l84XlFF27" +
+                    "yFzh1qFzNkNrHZGeTjSLAjYG4yQG3RqgZxzLYeS7wLLhorUx/5WtNFkMrUb8FEN9Wet2Au1EV7dazKAN" +
+                    "jIt96DbNOBknkQMwdTHtkZGRI1jgapp2NBKJPC0ELqD1bGHx15sttsiRPvUhut3IWr+c6Aqr8TlHKtZf" +
+                    "8fpzpSmGHIlEnjUvbF4kmyYnJ//c1dXVCBAo52LaM6+C7t+3QiHmPv8k4aDVxGiU0Q8u2U6MtGUriDZb" +
+                    "nC0aKfTYNVcnWEUPXQA5Ho+ny7moeUC2ygUgvI72x9qtl+EmPmLs3KRtU4GV3TYTrGuMX5wot4eOpdpK" +
+                    "ruZqs8kq9q0q2roNxU+L8jEuxxi3XXkKEunpLD5JAxjpJ/GxNxMsi1T8WgcqvYfBI9dP7zdgd7H93EuA" +
+                    "8EMPUm/pmyN74SIpu4lRoJWmNQutlyj7LqLbDwSuRYM9G6+f3nvvY+V8rAYq+eA24w9yiMjqpTbfkmTR" +
+                    "e6/YrzyFVtK8KmixQY70hX4m/fgApjBuuRPiAJT/wX3v454j1y0kvNQKBcjppPpv2zal9aylucnqBHgC" +
+                    "PXbFlwlWtZVrTojvDnTVnEx7ihxood7m85fcLVIDduNzHdFHv0Sj5QTrJolevdweVp1iuJWsU0x7peRA" +
+                    "bqTOat0YwBglM2LTTLCLtk1LrId6vZ/EVQ9XOHAWFwqsRYuPPEnO7kPRyNhuE1j/LeZ3WpUvGPE+Eh7e" +
+                    "/8xpXCjybZLQyMYwk3a/qgg0EWy2qM26JSx8eZP18EyOyd44aY/OkNzABYvvg4VFztwk0WdzWlj3AM1r" +
+                    "ii1j1hPZ9kOWPBy2bsPIov/nsicTLLdwweYXHWIipxh7/9/Wa8NalNYd22ldMKNEA3Np/v7PWf3qQwTt" +
+                    "lnhyn5LoHa22s7ZxEzffvn2q/KZplwb7iu1UUZo3suJv+7hvgZWSgTF6jZFjZxi/mSTQtpimr25kzgNR" +
+                    "NCNB+pMMjR1zi++e+ZihPx4loU+1lT1/nIGTA45WtNu4+WOUFrGQAzQ+t581+zbYrGgViJEl/d5vGKh/" +
+                    "iWWPR0rcaZI7v/ge5w7eLLejReMFLpTxw3exhusc6UOvcemteHlf4xkZ0sd/y4Xdlwh2N9pvf/dwYyQ+" +
+                    "Giy7l8XiFS6U+c8GoZCNYYb3vkxs73H0OyVMdfUbDP3qFc69eAS9cTlNi8t46pkrJPoc+8G7Z7j545Uf" +
+                    "sYZr0Fq6aNn8GG2PrqW5u4OG9iYCgSy50SFSfb2MnTzJ4OH3Gb/t/u+qLPvpMW7+mJVFNGTR4wdu/riV" +
+                    "Zxa5tPiFmz92dZlFto6fuPnjV59Z5MLxGzffB2cyizw9IuDm++FcZpGnIgpuvi/OptaRRcLN98f51Cqy" +
+                    "aLj5PrmTWkMWETffL/dSK8ii4ub75m5URxYZN98/96Mqsui4IM9tdYRDlgEX5LoxljDIsuCCfLe28x1Z" +
+                    "JlyQ8+aUviHLhgvy3l7Wc2QZcUHuG0R7hiwrLsh/i3fXkWXGBQGAQVxk2XFBEGAQD1kFXBAIGMRBVgUX" +
+                    "BAMG/5FVwgUBgcE/ZNVwQVBg8B5ZRVwQGBi8Q1YVFwQHBveRVcYFCYDBPWTVcUESYHAeuRZwQSJgcA65" +
+                    "VnBBMmCo/sLlAI9cP73HqTZFj3TA4CyIyrggKTA4A6M6LkgMDNUB1QIuSA4MlUHVCi4oAAzlgUWj0Vyt" +
+                    "4IIiwDB1oexkMvmO1bWUzYue220TDoefmXkDElmjDDCUXMlWUaZyzSgFDKVVcqGoVrlmqrnripAp5fYE" +
+                    "BVLwvlAqRLkKNlNqJatauWaUq2AzJVayspVrRtkKNmMx8VJuQlUoygNDQeSawIUaAYZpyA21ggvwP2il" +
+                    "bWAIg4txAAAAAElFTkSuQmCC";
     // ── Colors ────────────────────────────────────────────────
     private static final Color COLOR_PRIMARY   = new Color(180, 20, 40);
     private static final Color COLOR_HEADER_BG = new Color(245, 245, 245);
@@ -121,6 +167,20 @@ public class InvoicePdfService {
         PdfPCell leftCell = new PdfPCell();
         leftCell.setBorder(Rectangle.NO_BORDER);
         leftCell.setPadding(4);
+        // ── Company Logo ──────────────────────────────────────
+        try {
+            byte[] logoBytes = Base64.getDecoder().decode(LOGO_BASE64);
+            Image logo = Image.getInstance(logoBytes);
+            logo.scaleToFit(60, 60);
+            logo.setAlignment(Image.LEFT);
+            Chunk logoChunk = new Chunk(logo, 0, 0, true);
+            Paragraph logoParagraph = new Paragraph();
+            logoParagraph.add(logoChunk);
+            logoParagraph.setSpacingAfter(4);
+            leftCell.addElement(logoParagraph);
+        } catch (Exception e) {
+            System.err.println("Logo error: " + e.getMessage());
+        }
         leftCell.addElement(new Paragraph(COMPANY_NAME, FONT_COMPANY));
         leftCell.addElement(new Paragraph(COMPANY_ADDRESS, FONT_NORMAL));
         leftCell.addElement(new Paragraph(COMPANY_CITY, FONT_NORMAL));
@@ -155,11 +215,6 @@ public class InvoicePdfService {
                 "Date: " + invoice.getInvoiceDate().format(DATE_FMT), FONT_NORMAL);
         invDate.setAlignment(Element.ALIGN_CENTER);
         rightCell.addElement(invDate);
-
-        Paragraph status = new Paragraph(
-                "Status: " + invoice.getStatus().name(), FONT_LABEL);
-        status.setAlignment(Element.ALIGN_CENTER);
-        rightCell.addElement(status);
 
         table.addCell(leftCell);
         table.addCell(rightCell);
@@ -230,12 +285,12 @@ public class InvoicePdfService {
                 5f,   // Pack
                 8f,   // Batch
                 7f,   // Expiry
-                7f,   // MRP
+                9f,   // MRP
                 4f,   // Qty
                 5f,   // Free
-                7f,   // Rate
+                9f,   // Rate
                 6f,   // Disc%
-                5f,   // GST%
+                7f,   // GST%
                 8f,   // IGST
                 9f    // Amount
         });
