@@ -61,8 +61,25 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/logout").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/prometheus").hasRole("OWNER")
                         .anyRequest().authenticated()
+                )
+                .headers(headers -> headers
+                        // Prevents MIME sniffing attacks
+                        .contentTypeOptions(contentTypeOptions -> {})
+                        // Prevents clickjacking — page cannot be embedded in iframe
+                        .frameOptions(frameOptions -> frameOptions.deny())
+                        // Forces HTTPS for 1 year — prevents SSL stripping
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                        // Only send domain in Referrer header to external sites
+                        .referrerPolicy(referrer -> referrer
+                                .policy(org.springframework.security.web.header.writers
+                                        .ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                        )
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
