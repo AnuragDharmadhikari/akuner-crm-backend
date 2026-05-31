@@ -143,6 +143,18 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy config files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.prod.yml,prometheus.yml,promtail-config.yml,Caddyfile"
+          target: /opt/akuner/
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
