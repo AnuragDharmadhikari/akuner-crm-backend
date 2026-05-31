@@ -47,6 +47,11 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_PROFILES_ACTIVE: prod
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      OWNER_EMAIL: ${OWNER_EMAIL}
+      OWNER_PASSWORD: ${OWNER_PASSWORD}
+      OWNER_FULL_NAME: ${OWNER_FULL_NAME}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -126,31 +131,31 @@ services:
     # Stores and indexes logs from all containers
     # Grafana queries Loki for log visualization
     # No public port — internal network only
-    loki:
-      image: grafana/loki:2.9.0
-      container_name: vedpharm_loki_prod
-      command: -config.file=/etc/loki/local-config.yaml
-      restart: unless-stopped
-      networks:
-        - vedpharm_network
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: vedpharm_loki_prod
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - vedpharm_network
 
     # ── Promtail — Log Collector Agent ───────────────────────
     # Reads Docker container logs from the host
     # Ships logs to Loki with container labels
     # Needs access to Docker socket and container log files
-    promtail:
-      image: grafana/promtail:2.9.0
-      container_name: vedpharm_promtail_prod
-      volumes:
-        - ./promtail-config.yml:/etc/promtail/config.yml
-        - /var/lib/docker/containers:/var/lib/docker/containers:ro
-        - /var/run/docker.sock:/var/run/docker.sock
-      command: -config.file=/etc/promtail/config.yml
-      restart: unless-stopped
-      networks:
-        - vedpharm_network
-      depends_on:
-        - loki
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: vedpharm_promtail_prod
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - vedpharm_network
+    depends_on:
+      - loki
 
 networks:
   vedpharm_network:
