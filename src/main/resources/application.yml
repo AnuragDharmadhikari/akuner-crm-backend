@@ -1,6 +1,6 @@
 spring:
   application:
-    name: VedPharm CRM
+    name: AkunerCRM
 
   profiles:
     active: local
