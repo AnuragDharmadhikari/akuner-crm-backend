@@ -1,0 +1,33 @@
+# promtail-config.yml
+# Promtail is the log shipping agent
+# It reads Docker container logs and sends them to Loki
+# Think of it like a log forwarder — it bridges Docker and Loki
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  # Promtail tracks which log lines it has already sent
+  # so it doesn't re-send them after a restart
+  filename: /tmp/positions.yaml
+
+clients:
+  # Where to send the logs — Loki service on our Docker network
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker-containers
+    docker_sd_configs:
+      # Connect to Docker socket to discover all running containers
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Extract the container name and use it as a label
+      # This lets you filter logs by container in Grafana
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Add the Docker image name as a label
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'

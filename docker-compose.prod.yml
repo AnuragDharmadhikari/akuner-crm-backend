@@ -106,11 +106,51 @@ services:
     container_name: vedpharm_grafana_prod
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      # Disable Grafana's built-in signup — only admin can create users
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # App URL for correct redirect links
+      GF_SERVER_ROOT_URL: "http://localhost:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+    ports:
+      # Bind to 127.0.0.1 only — NOT 0.0.0.0
+      # This means only the VPS itself can reach port 3000
+      # External internet CANNOT reach it directly
+      # Only accessible via SSH tunnel from your laptop
+      - "127.0.0.1:3000:3000"
     restart: unless-stopped
     networks:
       - vedpharm_network
+
+    # ── Loki — Log Aggregation ────────────────────────────────
+    # Stores and indexes logs from all containers
+    # Grafana queries Loki for log visualization
+    # No public port — internal network only
+    loki:
+      image: grafana/loki:2.9.0
+      container_name: vedpharm_loki_prod
+      command: -config.file=/etc/loki/local-config.yaml
+      restart: unless-stopped
+      networks:
+        - vedpharm_network
+
+    # ── Promtail — Log Collector Agent ───────────────────────
+    # Reads Docker container logs from the host
+    # Ships logs to Loki with container labels
+    # Needs access to Docker socket and container log files
+    promtail:
+      image: grafana/promtail:2.9.0
+      container_name: vedpharm_promtail_prod
+      volumes:
+        - ./promtail-config.yml:/etc/promtail/config.yml
+        - /var/lib/docker/containers:/var/lib/docker/containers:ro
+        - /var/run/docker.sock:/var/run/docker.sock
+      command: -config.file=/etc/promtail/config.yml
+      restart: unless-stopped
+      networks:
+        - vedpharm_network
+      depends_on:
+        - loki
 
 networks:
   vedpharm_network:
@@ -121,3 +161,4 @@ volumes:
   grafana_data:
   caddy_data:
   caddy_config:
+  loki_data:
