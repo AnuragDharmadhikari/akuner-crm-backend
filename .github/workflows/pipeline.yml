@@ -69,11 +69,11 @@ jobs:
           SPRING_DATA_REDIS_HOST: localhost
           SPRING_DATA_REDIS_PORT: 6379
           SPRING_FLYWAY_ENABLED: true
-          OWNER_EMAIL: owner@akuner.in
-          OWNER_PASSWORD: changeme123
-          OWNER_FULL_NAME: Akuner Owner
-          MAIL_USERNAME: akunarlc9@gmail.com
-          MAIL_PASSWORD: changeme
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+          OWNER_FULL_NAME: ${{ secrets.OWNER_FULL_NAME }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         run: mvn clean verify -B
 
       - name: Upload test results on failure
