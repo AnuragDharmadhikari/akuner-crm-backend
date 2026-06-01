@@ -37,7 +37,7 @@ public class InvoiceService {
     private final InventoryService inventoryService;
     private final EmailService emailService;
 
-    @Value("${vedpharm.company.state}")
+    @Value("${akuner.company.state}")
     private String companyState;
 
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")

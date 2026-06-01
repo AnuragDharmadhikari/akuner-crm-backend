@@ -8,8 +8,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:akunarlc9@gmail.com}
-    password: ${MAIL_PASSWORD:your-app-password-here}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -19,7 +19,7 @@ spring:
             required: true
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/vedpharm
+    url: jdbc:postgresql://localhost:5432/akuner
     username: ${DB_USERNAME:your-username-key-goes-in-application-local.yml}
     password: ${DB_PASSWORD:your-password-key-goes-in-application-local.yml}
     driver-class-name: org.postgresql.Driver
@@ -80,15 +80,15 @@ info:
 
 application:
   jwt:
-    secret: ${JWT_SECRET:your-secret-key-goes-in-application-local.yml}
+    secret: ${JWT_SECRET}
     expiration-ms: 900000
     refresh-expiration-ms: 604800000
   owner:
-    email: ${OWNER_EMAIL:owner@akuner.in}
-    password: ${OWNER_PASSWORD:changeme123}
-    full-name: ${OWNER_FULL_NAME:Akuner Owner}
+    email: ${OWNER_EMAIL}
+    password: ${OWNER_PASSWORD}
+    full-name: ${OWNER_FULL_NAME}
 
-vedpharm:
+akuner:
   company:
     state: Maharashtra
 
@@ -98,7 +98,7 @@ vedpharm:
 # max-tokens: 1000 — hard cap per call — controls cost
 # timeout-seconds: 30 — AI calls can be slow — don't let them hang forever
 openai:
-  api-key: ${OPENAI_API_KEY:your-key-goes-in-application-local.yml}
+  api-key: ${OPENAI_API_KEY}
   model: gpt-4o-mini
   max-tokens: 1000
   timeout-seconds: 30

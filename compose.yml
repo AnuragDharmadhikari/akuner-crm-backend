@@ -1,24 +1,26 @@
+name: akuner
+
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: vedpharm_db
+    container_name: akuner_db
     environment:
-      POSTGRES_DB: vedpharm
-      POSTGRES_USER: vedpharm_user
-      POSTGRES_PASSWORD: vedpharm_pass
+      POSTGRES_DB: akuner
+      POSTGRES_USER: akuner_user
+      POSTGRES_PASSWORD: akuner_pass
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vedpharm_user -d vedpharm"]
+      test: ["CMD-SHELL", "pg_isready -U akuner_user -d akuner"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: vedpharm_cache
+    container_name: akuner_cache
     ports:
       - "6379:6379"
 

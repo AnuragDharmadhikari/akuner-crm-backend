@@ -1,5 +1,5 @@
 # .github/workflows/pipeline.yml
-# Full CI/CD pipeline for VedPharm backend
+# Full CI/CD pipeline for Akuner Life Sciences CRM backend
 #
 # Triggers:
 #   - Every push to master
@@ -22,9 +22,6 @@ on:
 jobs:
 
   # ── Job 1: Build & Test ──────────────────────────────────────
-  # Spins up real PostgreSQL and Redis containers as sidecars
-  # Runs all Maven tests against them
-  # This job runs on every push AND every pull request
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
@@ -33,9 +30,9 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB: vedpharm
-          POSTGRES_USER: vedpharm_user
-          POSTGRES_PASSWORD: vedpharm_pass
+          POSTGRES_DB: akuner
+          POSTGRES_USER: akuner_user
+          POSTGRES_PASSWORD: akuner_pass
         ports:
           - 5432:5432
         options: >-
@@ -62,16 +59,21 @@ jobs:
 
       - name: Build with Maven
         env:
-          DB_USERNAME: vedpharm_user
-          DB_PASSWORD: vedpharm_pass
+          DB_USERNAME: akuner_user
+          DB_PASSWORD: akuner_pass
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/vedpharm
-          SPRING_DATASOURCE_USERNAME: vedpharm_user
-          SPRING_DATASOURCE_PASSWORD: vedpharm_pass
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/akuner
+          SPRING_DATASOURCE_USERNAME: akuner_user
+          SPRING_DATASOURCE_PASSWORD: akuner_pass
           SPRING_DATA_REDIS_HOST: localhost
           SPRING_DATA_REDIS_PORT: 6379
           SPRING_FLYWAY_ENABLED: true
+          OWNER_EMAIL: owner@akuner.in
+          OWNER_PASSWORD: changeme123
+          OWNER_FULL_NAME: Akuner Owner
+          MAIL_USERNAME: akunarlc9@gmail.com
+          MAIL_PASSWORD: changeme
         run: mvn clean verify -B
 
       - name: Upload test results on failure
@@ -82,14 +84,6 @@ jobs:
           path: target/surefire-reports/
 
   # ── Job 2: Build Docker Image & Push to Docker Hub ───────────
-  # Only runs on direct push to master — not on pull requests
-  # Only runs if Job 1 passed
-  #
-  # What happens here:
-  #   - Docker Buildx builds the backend image using our Dockerfile
-  #   - Pushes two tags to Docker Hub:
-  #       :latest      → always points to the most recent build
-  #       :commit-sha  → permanent tag for this exact commit (for rollback)
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
@@ -100,21 +94,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Docker Buildx is the modern build engine
-      # It supports layer caching between CI runs which speeds up builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Log in to Docker Hub using the secrets we added in Step 2
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Build and push the image
-      # cache-from/cache-to: reuses build layers from previous CI runs
-      # This makes subsequent builds much faster
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
@@ -122,20 +110,12 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/vedpharm-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/vedpharm-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/akuner-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/akuner-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ── Job 3: Deploy to VPS ─────────────────────────────────────
-  # Only runs after Job 2 successfully pushed the image
-  # SSHs into the VPS and runs three commands:
-  #   1. docker compose pull  → downloads the new :latest image
-  #   2. docker compose up -d → restarts containers with new image
-  #   3. docker image prune   → removes old unused images to free disk
-  #
-  # NOTE: VPS_HOST, VPS_USER, VPS_SSH_KEY secrets don't exist yet
-  # This job will be skipped until we add them in Step 6 (VPS setup)
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest

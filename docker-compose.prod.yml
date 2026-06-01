@@ -8,41 +8,40 @@ services:
   # ── PostgreSQL ──────────────────────────────────────────────
   db:
     image: postgres:17-alpine
-    container_name: vedpharm_db_prod
+    container_name: akuner_db_prod
     environment:
-      POSTGRES_DB: vedpharm
+      POSTGRES_DB: akuner
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d vedpharm"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d akuner"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
   # ── Redis ───────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: vedpharm_cache_prod
+    container_name: akuner_cache_prod
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
   # ── Spring Boot Backend ─────────────────────────────────────
-  # image: pulls from Docker Hub — no building on the VPS
   app:
-    image: ${DOCKERHUB_USERNAME}/vedpharm-backend:latest
-    container_name: vedpharm_app_prod
+    image: ${DOCKERHUB_USERNAME}/akuner-backend:latest
+    container_name: akuner_app_prod
     environment:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/vedpharm
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/akuner
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_PROFILES_ACTIVE: prod
@@ -59,27 +58,22 @@ services:
         condition: service_started
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
   # ── React Frontend ──────────────────────────────────────────
-  # No ports exposed here — Caddy handles all incoming traffic
   frontend:
-    image: ${DOCKERHUB_USERNAME}/vedpharm-frontend:latest
-    container_name: vedpharm_frontend_prod
+    image: ${DOCKERHUB_USERNAME}/akuner-frontend:latest
+    container_name: akuner_frontend_prod
     depends_on:
       - app
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
   # ── Caddy — HTTPS Reverse Proxy ─────────────────────────────
-  # Caddy sits in front of everything
-  # It owns ports 80 and 443
-  # It auto-provisions SSL certificates from Let's Encrypt
-  # It proxies all traffic to the frontend container
   caddy:
     image: caddy:2-alpine
-    container_name: vedpharm_caddy_prod
+    container_name: akuner_caddy_prod
     ports:
       - "80:80"
       - "443:443"
@@ -91,61 +85,47 @@ services:
       - frontend
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
   # ── Prometheus ──────────────────────────────────────────────
-  # No public port — only accessible within the Docker network
   prometheus:
     image: prom/prometheus:latest
-    container_name: vedpharm_prometheus_prod
+    container_name: akuner_prometheus_prod
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
   # ── Grafana ─────────────────────────────────────────────────
-  # No public port — only accessible via SSH tunnel if needed
   grafana:
     image: grafana/grafana:latest
-    container_name: vedpharm_grafana_prod
+    container_name: akuner_grafana_prod
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      # Disable Grafana's built-in signup — only admin can create users
       GF_USERS_ALLOW_SIGN_UP: "false"
-      # App URL for correct redirect links
       GF_SERVER_ROOT_URL: "http://localhost:3000"
     volumes:
       - grafana_data:/var/lib/grafana
     ports:
-      # Bind to 127.0.0.1 only — NOT 0.0.0.0
-      # This means only the VPS itself can reach port 3000
-      # External internet CANNOT reach it directly
-      # Only accessible via SSH tunnel from your laptop
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
-    # ── Loki — Log Aggregation ────────────────────────────────
-    # Stores and indexes logs from all containers
-    # Grafana queries Loki for log visualization
-    # No public port — internal network only
+  # ── Loki — Log Aggregation ────────────────────────────────
   loki:
     image: grafana/loki:3.0.0
-    container_name: vedpharm_loki_prod
+    container_name: akuner_loki_prod
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
 
-    # ── Promtail — Log Collector Agent ───────────────────────
-    # Reads Docker container logs from the host
-    # Ships logs to Loki with container labels
-    # Needs access to Docker socket and container log files
+  # ── Promtail — Log Collector Agent ───────────────────────
   promtail:
     image: grafana/promtail:3.0.0
-    container_name: vedpharm_promtail_prod
+    container_name: akuner_promtail_prod
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -153,12 +133,12 @@ services:
     command: -config.file=/etc/promtail/config.yml
     restart: unless-stopped
     networks:
-      - vedpharm_network
+      - akuner_network
     depends_on:
       - loki
 
 networks:
-  vedpharm_network:
+  akuner_network:
     driver: bridge
 
 volumes:
