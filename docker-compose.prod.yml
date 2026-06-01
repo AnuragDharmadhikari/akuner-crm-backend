@@ -132,7 +132,7 @@ services:
     # Grafana queries Loki for log visualization
     # No public port — internal network only
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:3.0.0
     container_name: vedpharm_loki_prod
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
@@ -144,7 +144,7 @@ services:
     # Ships logs to Loki with container labels
     # Needs access to Docker socket and container log files
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:3.0.0
     container_name: vedpharm_promtail_prod
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml
