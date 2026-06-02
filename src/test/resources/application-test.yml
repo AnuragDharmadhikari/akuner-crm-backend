@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/vedpharm}
-    username: ${SPRING_DATASOURCE_USERNAME:vedpharm_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:vedpharm_pass}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/akuner}
+    username: ${SPRING_DATASOURCE_USERNAME:akuner_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:akuner_pass}
   jpa:
     hibernate:
       ddl-auto: create
@@ -26,6 +26,6 @@ openai:
   max-tokens: 1000
   timeout-seconds: 30
 
-vedpharm:
+akuner:
   company:
     state: Maharashtra

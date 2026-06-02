@@ -27,12 +27,9 @@ public class AuthController {
     // ── Register ──────────────────────────────────────────────
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
-            @Valid @RequestBody RegisterRequest request,
-            HttpServletResponse response) {
+            @Valid @RequestBody RegisterRequest request) {
 
         AuthService.TokenPair tokenPair = authService.register(request);
-        setAccessTokenCookie(response, tokenPair.accessToken());
-        setRefreshTokenCookie(response, tokenPair.refreshToken());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("User registered successfully",
@@ -62,7 +59,7 @@ public class AuthController {
             HttpServletResponse response) {
 
         // Extract refresh token from cookie
-        String refreshToken = extractCookieValue(request, "vedpharm_refresh");
+        String refreshToken = extractCookieValue(request, "akuner_refresh");
 
         if (refreshToken == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -84,50 +81,47 @@ public class AuthController {
             HttpServletResponse response) {
 
         // Extract refresh token and delete from DB
-        String refreshToken = extractCookieValue(request, "vedpharm_refresh");
+        String refreshToken = extractCookieValue(request, "akuner_refresh");
         authService.logout(refreshToken);
 
-        // Clear both cookies by setting maxAge to 0
-        clearCookie(response, "vedpharm_jwt", "/");
-        clearCookie(response, "vedpharm_refresh", "/api/v1/auth/refresh");
+        clearCookie(response, "akuner_jwt", "/");
+        clearCookie(response, "akuner_refresh", "/api/v1/auth/refresh");
 
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
     }
 
     // ── Cookie Helpers ────────────────────────────────────────
 
-    // Sets the short-lived access token cookie
-    // path=/ → sent with every request to the server
     private void setAccessTokenCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie("vedpharm_jwt", token);
+        Cookie cookie = new Cookie("akuner_jwt", token);
         cookie.setHttpOnly(true);
+        cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge((int) (accessExpirationMs / 1000));
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
 
-    // Sets the long-lived refresh token cookie
-    // path=/api/v1/auth/refresh → browser ONLY sends this cookie
-    // to the refresh endpoint — not to every API call
-    // This minimizes exposure of the long-lived token
     private void setRefreshTokenCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie("vedpharm_refresh", token);
+        Cookie cookie = new Cookie("akuner_refresh", token);
         cookie.setHttpOnly(true);
+        cookie.setSecure(true);
         cookie.setPath("/api/v1/auth/refresh");
         cookie.setMaxAge((int) (refreshExpirationMs / 1000));
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
 
-    // Clears a cookie by setting its maxAge to 0
     private void clearCookie(HttpServletResponse response, String name, String path) {
         Cookie cookie = new Cookie(name, "");
         cookie.setHttpOnly(true);
+        cookie.setSecure(true);
         cookie.setPath(path);
         cookie.setMaxAge(0);
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
 
-    // Extracts a cookie value by name from the request
     private String extractCookieValue(HttpServletRequest request, String cookieName) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) return null;

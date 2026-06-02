@@ -655,7 +655,7 @@ public class AiService {
                 
                 Use Indian business communication style.
                 Address recipient professionally.
-                Company name is "VedPharm".
+                Company name is "Akuner Life Sciences".
                 """, tone)
                 + BILINGUAL_INSTRUCTION;
 

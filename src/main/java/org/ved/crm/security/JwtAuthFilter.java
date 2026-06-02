@@ -88,12 +88,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
     }
 
-    // Extract JWT from the httpOnly cookie named "vedpharm_jwt"
     private String extractJwtFromCookie(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) return null;
         for (Cookie cookie : cookies) {
-            if ("vedpharm_jwt".equals(cookie.getName())) {
+            if ("akuner_jwt".equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }

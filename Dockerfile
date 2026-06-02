@@ -24,7 +24,7 @@ FROM eclipse-temurin:21-jre-alpine AS runtime
 
 # Create a non-root user — never run production apps as root
 # If the container is compromised, attacker gets nobody, not root
-RUN addgroup -S vedpharm && adduser -S vedpharm -G vedpharm
+RUN addgroup -S akuner && adduser -S akuner -G akuner
 
 # Set working directory
 WORKDIR /app
@@ -34,10 +34,10 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 # Change ownership to non-root user
-RUN chown vedpharm:vedpharm app.jar
+RUN chown akuner:akuner app.jar
 
 # Switch to non-root user
-USER vedpharm
+USER akuner
 
 # Expose the application port
 EXPOSE 8080

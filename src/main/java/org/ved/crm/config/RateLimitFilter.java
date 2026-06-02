@@ -2,6 +2,7 @@ package org.ved.crm.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -61,16 +62,29 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         // Get authenticated user from Authorization header
         // We use the JWT token itself as the key — unique per user session
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Extract JWT from the akuner_jwt cookie — same source as JwtAuthFilter
+// Previously read from Authorization header, but auth moved to httpOnly cookies
+// Without this fix, all cookie-authenticated requests bypassed rate limiting
+        String jwt = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("akuner_jwt".equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (jwt == null) {
             // Unauthenticated request — Spring Security will handle it
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Use first 16 chars of token as Redis key — unique enough, not full token
-        // Format: rate_limit:{token_prefix}:{minute_window}
-        String tokenPrefix = authHeader.substring(7, Math.min(23, authHeader.length()));
+// Use first 16 chars of JWT as Redis key — unique enough per session, not full token
+// Format: rate_limit:{token_prefix}:{minute_window}
+        String tokenPrefix = jwt.substring(0, Math.min(16, jwt.length()));
         long currentMinute = System.currentTimeMillis() / 60000;
         String redisKey = "rate_limit:" + tokenPrefix + ":" + currentMinute;
 
