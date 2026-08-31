@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.audit.Audited;
 import org.ved.crm.security.JwtService;
 import org.ved.crm.security.LoginRateLimiter;
+import org.ved.crm.security.UserPrincipal;
 import org.ved.crm.user.Role;
 import org.ved.crm.user.User;
 import org.ved.crm.user.UserRepository;
@@ -58,12 +59,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        var userDetails = org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getEmail())
-                .password(user.getPasswordHash())
-                .roles(user.getRole().name())
-                .build();
+        var userDetails = new UserPrincipal(user);
 
         String accessToken = jwtService.generateToken(
                 userDetails, user.getId(), user.getRole().name());
@@ -77,39 +73,24 @@ public class AuthService {
     }
 
     // ── Login ─────────────────────────────────────────────────
+    // NEW — full method
     @Transactional
     public TokenPair login(LoginRequest request) {
 
-        // Step 1 — Check rate limit BEFORE attempting authentication
         loginRateLimiter.checkRateLimit(request.email());
 
         try {
-            // Step 2 — Authenticate credentials
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.email(), request.password()));
 
-            // Step 3 — Load user
             User user = userRepository.findByEmail(request.email())
                     .orElseThrow();
 
-            // Step 4 — Check account is active
-            if (!user.isActive()) {
-                throw new BadCredentialsException(
-                        "Account is deactivated. Please contact your administrator.");
-            }
-
-            // Step 5 — Clear failed attempts
             loginRateLimiter.clearFailedAttempts(request.email());
 
-            var userDetails = org.springframework.security.core.userdetails.User
-                    .builder()
-                    .username(user.getEmail())
-                    .password(user.getPasswordHash())
-                    .roles(user.getRole().name())
-                    .build();
+            var userDetails = new UserPrincipal(user);
 
-            // Step 6 — Generate both tokens
             String accessToken = jwtService.generateToken(
                     userDetails, user.getId(), user.getRole().name());
             String refreshToken = refreshTokenService.createRefreshToken(user);
@@ -120,9 +101,9 @@ public class AuthService {
                     AuthResponse.of(user.getEmail(), user.getRole().name(), user.getFullName())
             );
 
-        } catch (BadCredentialsException ex) {
+        } catch (BadCredentialsException | org.springframework.security.authentication.AccountStatusException ex) {
             loginRateLimiter.recordFailedAttempt(request.email());
-            throw ex;
+            throw new BadCredentialsException("Invalid email or password");
         }
     }
 
@@ -147,12 +128,7 @@ public class AuthService {
         }
 
         // Step 4 — Build UserDetails for JWT generation
-        var userDetails = org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getEmail())
-                .password(user.getPasswordHash())
-                .roles(user.getRole().name())
-                .build();
+        var userDetails = new UserPrincipal(user);
 
         // Step 5 — Generate new access token
         String newAccessToken = jwtService.generateToken(
