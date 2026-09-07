@@ -1,0 +1,54 @@
+package org.akuner.crm.order;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.akuner.crm.chemist.Chemist;
+import org.akuner.crm.common.audit.BaseAuditEntity;
+import org.akuner.crm.stockist.Stockist;
+import org.akuner.crm.user.User;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "orders")
+public class Order extends BaseAuditEntity {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rep_id",nullable = false)
+    private User rep;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chemist_id",nullable = false)
+    private Chemist chemist;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stockist_id")
+    private Stockist stockist;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfillment_type",nullable = false)
+    private FulfillmentType fulfillmentType;
+
+    @Column(name = "order_date",nullable = false)
+    private LocalDate orderDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private OrderStatus status = OrderStatus.PENDING;
+
+    @Column(name = "total_amount",nullable = false,precision = 10,scale = 2)
+    private BigDecimal totalAmount;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "order",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
+}

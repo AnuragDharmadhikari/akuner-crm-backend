@@ -1,0 +1,85 @@
+package org.akuner.crm.territory;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.akuner.crm.common.exception.ResourceNotFoundException;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class TerritoryService {
+
+    private final TerritoryRepository territoryRepository;
+    private final TerritoryMapper territoryMapper;
+
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
+    public List<TerritoryDto> getAllTerritories(){
+        return territoryRepository.findAll()
+                .stream()
+                .map(territoryMapper::toDto)
+                .toList();
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
+    public TerritoryDto getTerritoryById(UUID id){
+        Territory territory = territoryRepository.findById(id)
+                .orElseThrow(()->new ResourceNotFoundException("Territory","id",id));
+        return territoryMapper.toDto(territory);
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @Transactional
+    public TerritoryDto createTerritory(CreateTerritoryRequest request) {
+        Territory territory = Territory.builder()
+                .name(request.name())
+                .state(request.state())
+                .zone(request.zone())
+                .build();
+
+        Territory saved = territoryRepository.save(territory);
+        return territoryMapper.toDto(
+                territoryRepository.findById(saved.getId()).orElseThrow());
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @Transactional
+    public TerritoryDto updateTerritory(UUID id, UpdateTerritoryRequest request) {
+        Territory territory = territoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Territory", "id", id));
+
+        if (!territory.isActive() &&
+                (request.isActive() == null || !request.isActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot update a deactivated territory: " + territory.getName()
+                            + ". Reactivate first.");
+        }
+
+        territory.setName(request.name());
+        territory.setState(request.state());
+        territory.setZone(request.zone());
+
+        if (request.isActive() != null) {
+            territory.setActive(request.isActive());
+        }
+
+        territoryRepository.save(territory);
+        return territoryMapper.toDto(
+                territoryRepository.findById(id).orElseThrow());
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @Transactional
+    public void deactivateTerritory(UUID id) {
+        Territory territory = territoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Territory", "id", id));
+        territory.setActive(false);
+        territoryRepository.save(territory);
+    }
+}

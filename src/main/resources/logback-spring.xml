@@ -16,7 +16,7 @@
                 <level>level</level>
             </fieldNames>
 
-            <!-- Shorten logger names — org.ved.crm.order.OrderService → OrderService -->
+            <!-- Shorten logger names — order.org.akuner.crm.OrderService → OrderService -->
             <shortenedLoggerNameLength>40</shortenedLoggerNameLength>
         </encoder>
     </appender>
