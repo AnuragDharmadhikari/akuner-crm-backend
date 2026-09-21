@@ -2,6 +2,8 @@ package org.akuner.crm.ai;
 
 import lombok.RequiredArgsConstructor;
 import org.akuner.crm.ai.dto.*;
+import org.akuner.crm.visit.Visit;
+import org.akuner.crm.visit.VisitStatus;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,6 +27,7 @@ import org.akuner.crm.user.UserRepository;
 import org.akuner.crm.visit.VisitRepository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -458,17 +461,17 @@ public class AiService {
 
         var doctors = doctorRepository.findByTerritoryId(territoryId);
 
-        long totalVisits = doctors.stream()
-                .mapToLong(d -> visitRepository
-                        .findByDoctorIdWithDetails(d.getId()).size())
-                .sum();
+        List<UUID> doctorIds = doctors.stream()
+                .map(Doctor::getId)
+                .toList();
 
-        long completedVisits = doctors.stream()
-                .mapToLong(d -> visitRepository.findByDoctorIdWithDetails(d.getId())
-                        .stream()
-                        .filter(v -> v.getStatus().name().equals("COMPLETED"))
-                        .count())
-                .sum();
+        List<Visit> allVisits = visitRepository.findByDoctorIdIn(doctorIds);
+
+        long totalVisits = allVisits.size();
+
+        long completedVisits = allVisits.stream()
+                .filter(v -> v.getStatus() == VisitStatus.COMPLETED)
+                .count();
 
         String systemPrompt = """
                 You are a senior business analyst writing executive territory

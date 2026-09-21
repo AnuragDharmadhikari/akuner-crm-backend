@@ -61,4 +61,7 @@ public interface VisitRepository extends JpaRepository<Visit, UUID> {
         ORDER BY v.visitDate DESC
     """)
     List<Visit> findAllWithDetails();
+
+    @Query("SELECT v FROM Visit v WHERE v.doctor.id IN :doctorIds")
+    List<Visit> findByDoctorIdIn(@Param("doctorIds") List<UUID> doctorIds);
 }
